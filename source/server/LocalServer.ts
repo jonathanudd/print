@@ -23,17 +23,14 @@ module Print.Server {
 			switch (request.url) {
 				case "/":
 					if (request.method == "POST") {
-						request.on("data", function(chunk: any) {
+						request.on("data", (chunk: any) => {
+							console.log(request.headers)
 							console.log(chunk.toString());
 						});
-						request.on("end", function() {
+						request.on("end", () => {
 							response.writeHead(200, "OK", { "Content-Type": "text/plain" });
 							response.end();
 						});
-					} else {
-						console.log("[405] " + request.method + " to " + request.url);
-						response.writeHead(405, "Method not supported", { "Content-Type": "text/html" });
-						response.end("<html><head><title>405 - Method not supported</title></head><body><h1>Method not supported.</h1></body></html>");
 					}
 					break;
 				default:

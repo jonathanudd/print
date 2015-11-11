@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"target": "ES3",
+		"module": "commonjs",
+		"noImplicitAny": true,
+		"removeComments": true,
+		"preserveConstEnums": true,
+		"out": "build/print.js",
+		"sourceMap": true,
+		"sourceRoot": "../source"
+	},
+	"files": [
+		"source/server/LocalServer.ts",
+		"source/print.ts"
+	]
+}

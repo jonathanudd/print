@@ -1,4 +1,5 @@
 /// <reference path="server/LocalServer" />
+/// <reference path="childprocess/Build" />
 
 module Print {
 	export class Program {

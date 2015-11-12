@@ -1,29 +1,45 @@
-
+/// <reference path="../ServerConfiguration" />
 /// <reference path="GitCommands" />
-var exec = require('child_process').exec
+var execSync = require('child_process').execSync
 module Print.Childprocess {
 	export class Build {
-		private pullRequestNumber: string
-		private user: string
-		private repo: string
-		private branch: string
-		private gitCommands: Childprocess.GitCommands
-		constructor(pullRequestNumber: string, user: string, repo: string, branch: string) {
-			this.pullRequestNumber = pullRequestNumber
-			this.user = user
-			this.repo = repo
-			this.branch = branch
-			this.gitCommands = new Childprocess.GitCommands(this.pullRequestNumber, this.user, this.repo, this.branch)
+		private pullRequestNumber: string;
+		private user: string;
+		private primaryRepository: string;
+		private secondaryRepository: string;
+		private primaryRepo: ServerConfiguration
+		private secondaryRepo: ServerConfiguration
+		private branch: string;
+		private gitCommands: Childprocess.GitCommands;
+		private commands: string;
+		constructor(pullRequestNumber: string, user: string,primaryRepo: ServerConfiguration, secondaryRepo: ServerConfiguration, branch: string) {
+		//constructor(pullRequestNumber: string, user: string, primaryRepository: string, secondaryRepository: string, branch: string) {
+			this.pullRequestNumber = pullRequestNumber;
+			this.user = user;
+			//this.primaryRepository = primaryRepository;
+			//this.secondaryRepository = secondaryRepository;
+			this.primaryRepo = primaryRepo;
+			this.secondaryRepo = secondaryRepo;
+			this.branch = branch;
 		}
-		setup() {
-			this.gitCommands.clone()
-			this.gitCommands.setUpstream()
-			this.gitCommands.fetch()
-			this.gitCommands.merge()
-			//this.gitCommands.all()
+		setup(repository: string, branch: string, upstream: string) {
+			this.gitCommands.clone(repository, branch);
+			this.gitCommands.setUpstream(repository, upstream);
+			this.gitCommands.fetch(repository);
+			this.gitCommands.merge(repository);
+		}
+		manage() {
+			//'736','emilwestergren', 'ooc-kean','add_naivemap')
+			execSync('mkdir ' + this.pullRequestNumber, (error: any, stdout: any, stderr: any) => {});
+			this.gitCommands = new Childprocess.GitCommands(this.pullRequestNumber, this.user);
+			this.setup(this.primaryRepo.name, this.branch, this.primaryRepo.upstream);
+			this.setup(this.secondaryRepo.name, this.branch, this.secondaryRepo.upstream);
+			//this.setup(this.primaryRepository, this.branch, 'vidhance');
+			//this.setup(this.secondaryRepository, this.branch, 'cogneco');
 		}
 		build() {
-			exec('cd ' + this.pullRequestNumber + ' && ./tools/validate.sh', (error: any, stdout: any, stderr: any) => {
+			execSync('cd ' + this.pullRequestNumber + '/' + this.primaryRepo.name + '&& ./build.sh ',
+			(error: any, stdout: any, stderr: any) => {
 				console.log('stdout: ' + stdout)
 				console.log('stderr: ' + stderr)
 				if (error !== null) {
@@ -31,7 +47,15 @@ module Print.Childprocess {
 				}
 			})
 		}
-
-
+		play() {
+			execSync('cd ' + this.pullRequestNumber + '/' + this.primaryRepo.name + '&& ./play.sh ' +  __dirname + '/../video/bird.mp4',
+			(error: any, stdout: any, stderr: any) => {
+				console.log('stdout: ' + stdout)
+				console.log('stderr: ' + stderr)
+				if (error !== null) {
+					console.log('exec error: ' + error)
+				}
+			})
+		}
 	}
 }

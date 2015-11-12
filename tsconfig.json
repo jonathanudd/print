@@ -11,6 +11,9 @@
 	},
 	"files": [
 		"source/server/LocalServer.ts",
-		"source/print.ts"
+		"source/ServerConfiguration.ts",
+		"source/print.ts",
+		"source/childprocess/Build.ts",
+		"source/childprocess/GitCommands.ts"
 	]
 }

@@ -1,8 +1,8 @@
 /// <reference path="../Commit" />
 /// <reference path="../Repository" />
 
-module Print.Github {
-	export class Push  {
+module Print.Github.Events {
+	export class PushEvent  {
 		compare: string;
 		head_commit: Commit;
 		repository: Repository;

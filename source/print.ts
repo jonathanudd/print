@@ -1,14 +1,11 @@
 /// <reference path="server/LocalServer" />
-/// <reference path="github/events/Push" />
-
-var fs = require("fs")
 
 module Print {
 	export class Program {
 		private server: Server.LocalServer
 		constructor() {
 			this.registerKeyEvents();
-			this.server = new Server.LocalServer(48085);
+			this.server = new Server.LocalServer("config.json");
 			this.server.start();
 		}
 		registerKeyEvents() {

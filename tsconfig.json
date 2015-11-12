@@ -10,7 +10,15 @@
 		"sourceRoot": "../source"
 	},
 	"files": [
+		"source/github/events/Push.ts",
+		
+		"source/github/Author.ts",
+		"source/github/Commit.ts",
+		"source/github/Owner.ts",
+		"source/github/Repository.ts",
+		
 		"source/server/LocalServer.ts",
+		
 		"source/print.ts"
 	]
 }

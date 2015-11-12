@@ -1,8 +1,10 @@
 /// <reference path="../ServerConfiguration" />
+/// <reference path="../RepositoryConfiguration" />
 /// <reference path="GitCommands" />
 var execSync = require('child_process').execSync
 module Print.Childprocess {
 	export class Build {
+		private vidprocConfiguration: RepositoryConfiguration;
 		private pullRequestNumber: string;
 		private user: string;
 		private primaryRepository: string;
@@ -12,12 +14,10 @@ module Print.Childprocess {
 		private branch: string;
 		private gitCommands: Childprocess.GitCommands;
 		private commands: string;
-		constructor(pullRequestNumber: string, user: string,primaryRepo: ServerConfiguration, secondaryRepo: ServerConfiguration, branch: string) {
-		//constructor(pullRequestNumber: string, user: string, primaryRepository: string, secondaryRepository: string, branch: string) {
+		constructor(vidprocConfiguration: RepositoryConfiguration, pullRequestNumber: string, user: string,primaryRepo: ServerConfiguration, secondaryRepo: ServerConfiguration, branch: string) {
+			this.vidprocConfiguration = vidprocConfiguration;
 			this.pullRequestNumber = pullRequestNumber;
 			this.user = user;
-			//this.primaryRepository = primaryRepository;
-			//this.secondaryRepository = secondaryRepository;
 			this.primaryRepo = primaryRepo;
 			this.secondaryRepo = secondaryRepo;
 			this.branch = branch;
@@ -31,11 +31,9 @@ module Print.Childprocess {
 		manage() {
 			//'736','emilwestergren', 'ooc-kean','add_naivemap')
 			execSync('mkdir ' + this.pullRequestNumber, (error: any, stdout: any, stderr: any) => {});
-			this.gitCommands = new Childprocess.GitCommands(this.pullRequestNumber, this.user);
-			this.setup(this.primaryRepo.name, this.branch, this.primaryRepo.upstream);
-			this.setup(this.secondaryRepo.name, this.branch, this.secondaryRepo.upstream);
-			//this.setup(this.primaryRepository, this.branch, 'vidhance');
-			//this.setup(this.secondaryRepository, this.branch, 'cogneco');
+			//this.gitCommands = new Childprocess.GitCommands(this.pullRequestNumber, this.user);
+			//this.setup(this.primaryRepo.name, this.branch, this.primaryRepo.upstream);
+			//this.setup(this.secondaryRepo.name, this.branch, this.secondaryRepo.upstream);
 		}
 		build() {
 			execSync('cd ' + this.pullRequestNumber + '/' + this.primaryRepo.name + '&& ./build.sh ',

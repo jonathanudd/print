@@ -1,0 +1,9 @@
+{
+	"name" : "ooc-vidproc",
+	"secondary" : "ooc-kean",
+	"todo" : [
+			"build.sh",
+ 			"play.sh bird.mp4",
+			"validate.sh"
+	]
+}

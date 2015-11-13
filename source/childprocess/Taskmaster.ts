@@ -39,18 +39,20 @@ module Print.Childprocess {
 		}
 		manage() {
 			// Create folder
-			execSync('mkdir ' + this.pullRequestNumber, (error: any, stdout: any, stderr: any) => {});
-
+			if (!fs.existsSync(this.pullRequestNumber)){
+			    fs.mkdirSync(this.pullRequestNumber);
+			}
 			// Clone, set upstream, fetch and merge primary repo
-			this.setup(this.primaryRepo.name, this.branch, this.primaryRepo.upstream);
-
+			if (!fs.existsSync(this.pullRequestNumber + '/' + this.primaryRepo.name)){
+				this.setup(this.primaryRepo.name, this.branch, this.primaryRepo.upstream);
+			}
 			// for testing only remove TMP!!!!!!!!!!!!
 			// Read repository Configuration file in repo
 			this.readRepositoryConfigurationTMP(this.primaryRepo.name);
-
 			// Clone secondary repository
-			this.setup(this.repositoryConfiguration.secondary, this.branch, this.repositoryConfiguration.secondaryUpstream);
-
+			if (!fs.existsSync(this.pullRequestNumber + '/' + this.repositoryConfiguration.secondary)){
+				this.setup(this.repositoryConfiguration.secondary, this.branch, this.repositoryConfiguration.secondaryUpstream);
+			}
 			//  Perform actions
 			this.executeActionList();
 		}
@@ -67,14 +69,10 @@ module Print.Childprocess {
 			else {
 				command = command + action.task + ' ' +  __dirname + '/../video/' + action.dependency;
 			}
-			execSync(command,
-			(error: any, stdout: any, stderr: any) => {
-				console.log('stdout: ' + stdout)
-				console.log('stderr: ' + stderr)
-				if (error !== null) {
-					console.log('exec error: ' + error)
-				}
-			})
+			var returnValue = execSync(command);
+			var outputArray = String(returnValue).split('\n');
+			console.log(outputArray[outputArray.length -2]);
+
 		}
 	}
 }

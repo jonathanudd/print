@@ -1,8 +1,10 @@
+/// <reference path="Action.ts" />
 module Print {
 	export class RepositoryConfiguration {
 		name: string;
 		secondary: string;
-		todo: string[];
+		secondaryUpstream : string;
+		actions: Action[];
 		constructor() {
 		}
 	}

@@ -13,7 +13,7 @@
 		"source/server/LocalServer.ts",
 		"source/ServerConfiguration.ts",
 		"source/print.ts",
-		"source/childprocess/Build.ts",
+		"source/childprocess/Taskmaster.ts",
 		"source/childprocess/GitCommands.ts"
 	]
 }

@@ -1,6 +1,6 @@
 /// <reference path="../typings/node/node" />
 /// <reference path="server/LocalServer" />
-/// <reference path="childprocess/Build" />
+/// <reference path="childprocess/Taskmaster" />
 /// <reference path="ServerConfiguration" />
 /// <reference path="RepositoryConfiguration" />
 
@@ -31,11 +31,12 @@ var vidprocConfig: Print.RepositoryConfiguration = JSON.parse(vidprocConfigJSON)
 var vidproc =  new Print.ServerConfiguration('ooc-vidproc', '1234', 'vidhance')
 var cogneco =  new Print.ServerConfiguration('ooc-kean', '1234', 'cogneco')
 
-var build = new Print.Childprocess.Build(vidprocConfig, '736','emilwestergren', vidproc, cogneco,'master');
+var tm = new Print.Childprocess.Taskmaster('736','emilwestergren', vidproc,'master');
+//var tm = new Print.Childprocess.Taskmaster('750','emilwestergren', cogneco,'remove_bind');
 //var build = new Print.Childprocess.Build('736','emilwestergren', 'ooc-vidproc', 'ooc-kean','master');
-build.manage();
-//build.build()
-//build.play();
+tm.manage();
+//tm.build()
+//tm.play();
 //var json = fs.readFileSync("config.json", "utf-8")
 //var config: Array<Print.ServerConfiguration> = JSON.parse(json);
 //console.log(config[0].name)

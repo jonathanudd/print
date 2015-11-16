@@ -10,13 +10,10 @@ module Print.Childprocess {
 	export class Taskmaster  {
 		private pullRequestNumber: string;
 		private user: string;
-		private primaryRepository: string;
-		private secondaryRepository: string;
 		private primaryRepo: ServerConfiguration
 		private secondaryRepo: ServerConfiguration
 		private branch: string;
 		private gitCommands: Childprocess.GitCommands;
-		private commands: string;
 		private repositoryConfiguration: RepositoryConfiguration
 		constructor(pullRequestNumber: string, user: string,primaryRepo: ServerConfiguration, branch: string) {
 			this.pullRequestNumber = pullRequestNumber;
@@ -57,7 +54,11 @@ module Print.Childprocess {
 			}
 			//  Perform actions
 			var actionResult = this.executeActionList();
-			console.log(actionResult);
+			//console.log(actionResult);
+			var json = JSON.stringify(actionResult);
+			console.log(json);;
+		}
+		createJSON(myClass : any) {
 		}
 		executeActionList() : ExecutionResult[]  {
 			var executionResult: ExecutionResult[] = [];

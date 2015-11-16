@@ -8,7 +8,14 @@ module Print {
 		organization: string;
 		secret: string;
 		static readConfigurationFile(file: string): ServerConfiguration[] {
-			return <ServerConfiguration[]>JSON.parse(fs.readFileSync(file, "utf-8"));
+			var result: ServerConfiguration[] = []
+			try {
+				result = <ServerConfiguration[]>JSON.parse(fs.readFileSync(file, "utf-8"));
+			} catch (Error) {
+				console.log("There was an error while reading the configuration file, unable to continue.\n" + Error.toString())
+				process.exit(1); // TODO: Recover or crash and burn?
+			}
+			return result;
 		}
 	}
 }

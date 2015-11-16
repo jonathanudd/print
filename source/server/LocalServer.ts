@@ -1,12 +1,23 @@
 /// <reference path="../../typings/node/node.d.ts" />
+/// <reference path="../configuration/ServerConfiguration" />
+/// <reference path="PullRequestQueue" />
 
-var http = require("http")
+var http = require("http");
 
 module Print.Server {
 	export class LocalServer {
 		private server: any;
-		constructor(private port: number) {
-			this.server = http.createServer(this.requestCallback);
+		private port = 48085;
+		private configurations: ServerConfiguration[] = [];
+		private pullRequestQueues: PullRequestQueue[] = [];
+		constructor(configurationFile: string) {
+			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
+			this.configurations.forEach(configuration => {
+				this.pullRequestQueues.push(new PullRequestQueue(configuration.name, configuration.organization));
+			});
+			this.server = http.createServer((request: any, response: any) => {
+				this.requestCallback(request, response)
+			});
 		}
 		start() {
 			this.server.listen(this.port, () => {
@@ -15,36 +26,28 @@ module Print.Server {
 		}
 		stop() {
 			this.server.close(() => {
-				console.log("Print server closed");
-			})
+				console.log("server closed");
+			});
 		}
 		private requestCallback(request: any, response: any) {
-			switch (request.url) {
-				//
-				// TODO: use config file
-				//
-				case "/print/webhooks-test":
-					if (request.method == "POST") {
-						request.on("data", (payload: any) => {
-							request.headers; // kind of event
-							console.log(request.headers);
-							//payload.toString() // payload (JSON)
-						});
-						request.on("end", () => {
-							response.writeHead(200, "OK", { "Content-Type": "text/plain" });
-							response.end();
-						});
-					} else {
-						response.writeHead(404, "Not found", { "Content-Type": "text/html" });
-						response.end("<html><head><title>404 - Not found</title></head><body><h1>Not found.</h1></body></html>");
-						console.log("[404] " + request.method + " to " + request.url);
+			var url: string = request.url;
+			var name = url.substr(7, url.length - 7);
+			switch (<string>request.method) {
+				case "POST":
+					if (!this.pullRequestQueues.some(queue => { return queue.process(name, request, response); })) {
+						LocalServer.sendResponse(response, 404, "Not found");
 					}
 					break;
+				case "GET":
+					console.log("Received a GET request - responding with [400: Bad request]");
 				default:
-					response.writeHead(404, "Not found", { "Content-Type": "text/html" });
-					response.end("<html><head><title>404 - Not found</title></head><body><h1>Not found.</h1></body></html>");
-					console.log("[404] " + request.method + " to " + request.url);
-			};
+					LocalServer.sendResponse(response, 400, "Bad request");
+					break;
+			}
+		}
+		static sendResponse(responseObject: any, code: number, message: string) {
+			responseObject.writeHead(code, message, { "Content-Type": "text/plain" });
+			responseObject.end();
 		}
 	}
 }

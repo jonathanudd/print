@@ -10,15 +10,21 @@
 		"sourceRoot": "../source"
 	},
 	"files": [
-		"source/github/events/Push.ts",
-		
+		"source/configuration/ServerConfiguration.ts",
+		"source/github/api/PullRequest.ts",
+		"source/github/api/Url.ts",
+		"source/github/events/PullRequestEvent.ts",
+		"source/github/events/PushEvent.ts",
 		"source/github/Author.ts",
 		"source/github/Commit.ts",
+		"source/github/Head.ts",
 		"source/github/Owner.ts",
+		"source/github/PullRequest.ts",
 		"source/github/Repository.ts",
-		
+		"source/github/User.ts",
+		"source/server/PullRequest.ts",
+		"source/server/PullRequestQueue.ts",
 		"source/server/LocalServer.ts",
-		
 		"source/print.ts"
 	]
 }

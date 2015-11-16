@@ -6,10 +6,12 @@ module Print.Childprocess {
 		private user: string
 		name: string;
 		secret: string;
-		upstream: string;
-		constructor(pullRequestNumber: string, user: string) {
+		organization: string;
+		constructor(pullRequestNumber: string, user: string, name: string, organization: string) {
 			this.pullRequestNumber = pullRequestNumber;
 			this.user = user;
+			this.name = name;
+			this.organization = organization;
 
 		}
 		clone(repo: string, branch: string) {

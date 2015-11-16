@@ -28,10 +28,12 @@ module Print {
 var vidprocConfigJSON = fs.readFileSync("ooc-vidproc.json", "utf-8");
 var vidprocConfig: Print.RepositoryConfiguration = JSON.parse(vidprocConfigJSON);
 
-var vidproc =  new Print.ServerConfiguration2('ooc-vidproc', '1234', 'vidhance')
-var cogneco =  new Print.ServerConfiguration2('ooc-kean', '1234', 'cogneco')
+//var vidproc =  new Print.ServerConfiguration2('ooc-vidproc', '1234', 'vidhance')
+//var cogneco =  new Print.ServerConfiguration2('ooc-kean', '1234', 'cogneco')
+//var tm = new Print.Childprocess.Taskmaster('736','emilwestergren', vidproc,'master');
 
-var tm = new Print.Childprocess.Taskmaster('736','emilwestergren', vidproc,'master');
+var tm = new Print.Childprocess.Taskmaster('736','emilwestergren','ooc-vidproc', 'vidhance','master');
+
 //var tm = new Print.Childprocess.Taskmaster('750','emilwestergren', cogneco,'remove_bind');
 //var build = new Print.Childprocess.Build('736','emilwestergren', 'ooc-vidproc', 'ooc-kean','master');
 tm.manage();

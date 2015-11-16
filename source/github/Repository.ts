@@ -7,5 +7,8 @@ module Print.Github {
 		full_name: string;
 		owner: Owner;
 		private: boolean;
+		fork: boolean;
+		url: string;
+		pulls_url: string;
 	}
 }

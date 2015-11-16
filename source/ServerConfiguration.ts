@@ -1,5 +1,5 @@
 module Print {
-	export class ServerConfiguration {
+	export class ServerConfiguration2 {
 		name: string;
 		secret: string;
 		upstream: string;

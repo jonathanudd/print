@@ -4,6 +4,9 @@ module Print.Childprocess {
 	export class GitCommands {
 		private pullRequestNumber: string
 		private user: string
+		name: string;
+		secret: string;
+		upstream: string;
 		constructor(pullRequestNumber: string, user: string) {
 			this.pullRequestNumber = pullRequestNumber;
 			this.user = user;

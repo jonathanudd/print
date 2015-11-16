@@ -1,43 +1,57 @@
 /// <reference path="../../typings/node/node.d.ts" />
-var http = require("http")
+/// <reference path="../configuration/ServerConfiguration" />
+/// <reference path="PullRequestQueue" />
+
+var http = require("http");
+
 module Print.Server {
 	export class LocalServer {
 		private server: any;
-		constructor(private port: number) {
-			this.server = http.createServer(this.requestCallback);
+		private port = 48085;
+		private configurations: ServerConfiguration[] = [];
+		private pullRequestQueues: PullRequestQueue[] = [];
+		constructor(configurationFile: string) {
+			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
+			this.configurations.forEach(configuration => {
+				this.pullRequestQueues.push(new PullRequestQueue(configuration.name, configuration.organization));
+			});
+			this.server = http.createServer((request: any, response: any) => {
+				this.requestCallback(request, response)
+			});
 		}
 		start() {
 			this.server.listen(this.port, () => {
-				console.log("listening on port " + this.port)
+				console.log("listening on port " + this.port);
 			});
 		}
 		stop() {
 			this.server.close(() => {
-				console.log("Print server closed")
-			})
-		}
-		createRequest(url: string, request: string) {
-			// TODO: create POST
+				console.log("print server closed");
+			});
 		}
 		private requestCallback(request: any, response: any) {
-			switch (request.url) {
-				case "/":
-					if (request.method == "POST") {
-						request.on("data", (chunk: any) => {
-							console.log(request.headers)
-							console.log(chunk.toString());
-						});
+			var url: string = request.url;
+			var name = url.substr(7, url.length - 7);
+			switch (<string>request.method) {
+				case "POST":
+					if (this.pullRequestQueues.some(queue => { return queue.process(name, request); })) {
 						request.on("end", () => {
-							response.writeHead(200, "OK", { "Content-Type": "text/plain" });
-							response.end();
+							this.sendResponse(response, 200, "OK");
 						});
+					} else {
+						this.sendResponse(response, 404, "Not found");
 					}
 					break;
+				case "GET":
+					console.log("Received a GET request - responding with [400: Bad request]");
 				default:
-					response.writeHead(404, "Not found", { "Content-Type": "text/html" });
-					response.end("<html><head><title>404 - Not found</title></head><body><h1>Not found.</h1></body></html>");
-					console.log("[404] " + request.method + " to " + request.url);
-			};
+					this.sendResponse(response, 400, "Bad request");
+					break;
+			}
+		}
+		private sendResponse(responseObject: any, code: number, message: string) {
+			responseObject.writeHead(code, message, { "Content-Type": "text/plain" });
+			responseObject.end();
 		}
 	}
 }

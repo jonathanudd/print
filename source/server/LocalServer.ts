@@ -26,7 +26,7 @@ module Print.Server {
 		}
 		stop() {
 			this.server.close(() => {
-				console.log("print server closed");
+				console.log("server closed");
 			});
 		}
 		private requestCallback(request: any, response: any) {

@@ -13,7 +13,7 @@ module Print.Server {
 		constructor(configurationFile: string) {
 			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
 			this.configurations.forEach(configuration => {
-				this.pullRequestQueues.push(new PullRequestQueue(configuration.name));
+				this.pullRequestQueues.push(new PullRequestQueue(configuration.name, configuration.organization));
 			});
 			this.server = http.createServer((request: any, response: any) => {
 				this.requestCallback(request, response)
@@ -27,7 +27,7 @@ module Print.Server {
 		stop() {
 			this.server.close(() => {
 				console.log("print server closed");
-			})
+			});
 		}
 		private requestCallback(request: any, response: any) {
 			var url: string = request.url;
@@ -36,21 +36,22 @@ module Print.Server {
 				case "POST":
 					if (this.pullRequestQueues.some(queue => { return queue.process(name, request); })) {
 						request.on("end", () => {
-							response.writeHead(200, "OK", { "Content-Type": "text/plain" });
-							response.end();
+							this.sendResponse(response, 200, "OK");
 						});
 					} else {
-						response.writeHead(404, "Not found", { "Content-Type": "text/html" });
-						response.end("<html><head><title>404 - Not found</title></head><body><h1>Not found.</h1></body></html>");
+						this.sendResponse(response, 404, "Not found");
 					}
 					break;
 				case "GET":
-					console.log("Received a GET request");
+					console.log("Received a GET request - responding with [400: Bad request]");
 				default:
-					response.writeHead(400, "Bad request", { "Content-Type": "text/html" });
-					response.end("<html><head><title>400 - Bad request</title></head><body><h1>Bad request.</h1></body></html>");
+					this.sendResponse(response, 400, "Bad request");
 					break;
 			}
+		}
+		private sendResponse(responseObject: any, code: number, message: string) {
+			responseObject.writeHead(code, message, { "Content-Type": "text/plain" });
+			responseObject.end();
 		}
 	}
 }

@@ -1,27 +1,55 @@
 /// <reference path="../../typings/node/node.d.ts" />
 /// <reference path="../configuration/ServerConfiguration" />
-/// <reference path="PullRequest" />
 /// <reference path="../github/events/PullRequestEvent" />
+/// <reference path="../github/api/PullRequest" />
+
+/// <reference path="PullRequest" />
 
 module Print.Server {
 	export class PullRequestQueue {
-		private request: PullRequest[] = [];
-		constructor(private name: string) {
+		private requests: PullRequest[] = [];
+		constructor(private name: string, private organization: string) {
+			Github.Api.PullRequest.queryOpenPullRequests(organization, name, (requests: Server.PullRequest[]) => {
+				this.requests = requests
+			});
 		}
 		process(name: string, request: any): boolean {
 			var result: boolean;
-			//
-			// TODO: Do we check the header if this is in fact a pull request event?
-			//
 			if (result = (name == this.name)) {
 				request.on("data", (payload: any) => {
-					// here we check if the PR exists in our list
-					// event goes into PullRequest where it is sorted out and processed to find out if there was a change
-					var event = <Print.Github.Events.PullRequestEvent>JSON.parse(payload);
-					console.log(event.pull_request.number);
-				})
+					//
+					// TODO: We need a buffer here, as 'payload' might not contain all of the data
+					//
+					var eventData = <Github.Events.PullRequestEvent>JSON.parse(payload);
+					var pullRequest = this.find(eventData.pull_request.id);
+					if (pullRequest) {
+						pullRequest.tryUpdate(eventData.pull_request);
+					} else {
+						console.log("Adding new pull request: " + eventData.pull_request.title + ", id: " + eventData.pull_request.id);
+						this.requests.push(new PullRequest(eventData.pull_request));
+					}
+				});
 			}
 			return result;
+		}
+		private find(pullRequestId: string): PullRequest {
+			var result: PullRequest;
+			this.requests.some(request => {
+				if (request.getId() == pullRequestId) {
+					result = request;
+					return true;
+				}
+				return false;
+			});
+			return result;
+		}
+		private initializePullRequests(requests: PullRequest[]) {
+			var result: PullRequest[] = []
+			requests.forEach(request => {
+				console.log("init PR: " + request.getTitle() + ", id: " + request.getId())
+				result.push(request);
+			})
+			this.requests.concat(result);
 		}
 	}
 }

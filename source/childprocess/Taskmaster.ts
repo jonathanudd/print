@@ -57,14 +57,14 @@ module Print.Childprocess {
 			}
 			//  Perform actions
 			var actionResult = this.executeActionList();
+			console.log(actionResult);
 		}
-		executeActionList() : [string, string][]  {
-			var executionResult:[string, string][] = [];
+		executeActionList() : ExecutionResult[]  {
+			var executionResult: ExecutionResult[] = [];
 			for (var v in this.repositoryConfiguration.actions) {
 				var action = this.repositoryConfiguration.actions[v];
-				var tmp = this.executeAction(action);
-
-				executionResult.push([action.task , tmp]);
+				var result = this.executeAction(action);
+				executionResult.push(new Print.ExecutionResult(action.task,result));
 			}
 			return executionResult;
 		}

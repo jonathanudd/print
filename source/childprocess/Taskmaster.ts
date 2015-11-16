@@ -1,8 +1,10 @@
 /// <reference path="../ServerConfiguration" />
 /// <reference path="../RepositoryConfiguration" />
 /// <reference path="../Action" />
+/// <reference path="../ExecutionResult" />
 /// <reference path="GitCommands" />
 var execSync = require('child_process').execSync
+var exec = require('child_process').exec
 var fs = require("fs")
 module Print.Childprocess {
 	export class Taskmaster  {
@@ -54,14 +56,19 @@ module Print.Childprocess {
 				this.setup(this.repositoryConfiguration.secondary, this.branch, this.repositoryConfiguration.secondaryUpstream);
 			}
 			//  Perform actions
-			this.executeActionList();
+			var actionResult = this.executeActionList();
 		}
-		executeActionList() {
+		executeActionList() : [string, string][]  {
+			var executionResult:[string, string][] = [];
 			for (var v in this.repositoryConfiguration.actions) {
-				this.executeAction(this.repositoryConfiguration.actions[v]);
+				var action = this.repositoryConfiguration.actions[v];
+				var tmp = this.executeAction(action);
+
+				executionResult.push([action.task , tmp]);
 			}
+			return executionResult;
 		}
-		executeAction(action: Action) {
+		executeAction(action: Action) : string {
 			var command = 'cd ' + this.pullRequestNumber + '/' + this.primaryRepo.name + ' && ';
 			if (action.dependency == 'none') {
 				command = command + action.task;
@@ -69,10 +76,10 @@ module Print.Childprocess {
 			else {
 				command = command + action.task + ' ' +  __dirname + '/../video/' + action.dependency;
 			}
-			var returnValue = execSync(command);
-			var outputArray = String(returnValue).split('\n');
-			console.log(outputArray[outputArray.length -2]);
-
+			var outputValue = execSync(command);
+			var outputArray = String(outputValue).split('\n');
+			var returnValue = outputArray[outputArray.length -2]
+			return returnValue;
 		}
 	}
 }

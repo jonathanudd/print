@@ -14,45 +14,41 @@ module Print.Childprocess {
 			this.organization = organization;
 
 		}
-		clone(repo: string, branch: string) {
-			execSync('cd ' + this.pullRequestNumber + ' && git clone -b '+ branch + ' --single-branch https://github.com/'+this.user+'/'+repo,
-			 (error: any, stdout: any, stderr: any) => {
-					console.log('stdout: ' + stdout)
-					console.log('stderr: ' + stderr)
-					if (error !== null) {
-						console.log('exec error: ' + error)
-					}
-		  })
+		clone(repo: string, branch: string) : number {
+			try {
+				execSync('cd ' + this.pullRequestNumber + ' && git clone -b '+ branch + ' --single-branch https://github.com/'+this.user+'/'+repo);
+		  		return 0;
+			}
+			catch (ex) {
+				return -1;
+			}
 		}
-		merge(repo: string ) {
-			execSync('cd ' + this.pullRequestNumber + '/' + repo  + ' && git merge --no-edit upstream/master' ,
-			(error: any, stdout: any, stderr: any) => {
-					console.log('stdout: ' + stdout)
-					console.log('stderr: ' + stderr)
-					if (error !== null) {
-						console.log('exec error: ' + error)
-					}
-				})
+		merge(repo: string ) : number {
+			try {
+				execSync('cd ' + this.pullRequestNumber + '/' + repo  + ' && git merge --no-edit upstream/master');
+				return 0;
+			}
+			catch (ex) {
+				return -1;
+			}
 		}
-		setUpstream(repo: string, upstream: string) {
-			execSync('cd ' + this.pullRequestNumber + '/' + repo +  ' && git remote add upstream https://github.com/' + upstream + '/' + repo ,
-			(error: any, stdout: any, stderr: any) => {
-					console.log('stdout: ' + stdout)
-					console.log('stderr: ' + stderr)
-					if (error !== null) {
-						console.log('exec error: ' + error)
-					}
-				})
+		setUpstream(repo: string, upstream: string) : number {
+			try {
+				execSync('cd ' + this.pullRequestNumber + '/' + repo +  ' && git remote add upstream https://github.com/' + upstream + '/' + repo);
+				return 0;
+			}
+			catch (ex) {
+				return -1;
+			}
 		}
-		fetch(repo: string) {
-			execSync('cd ' + this.pullRequestNumber + '/' + repo + ' && git fetch upstream',
-			(error: any, stdout: any, stderr: any) => {
-				console.log('stdout: ' + stdout)
-				console.log('stderr: ' + stderr)
-				if (error !== null) {
-					console.log('exec error: ' + error)
-				}
-			})
+		fetch(repo: string) : number {
+			try {
+				execSync('cd ' + this.pullRequestNumber + '/' + repo + ' && git fetch upstream');
+				return 0;
+			}
+			catch (ex) {
+				return -1;
+			}
 		}
     /*all() {
       execSync('git clone -b '+ this.branch + ' --single-branch https://github.com/'+this.user+'/'+this.repo +

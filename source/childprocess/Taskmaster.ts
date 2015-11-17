@@ -36,7 +36,7 @@ module Print.Childprocess {
 			var secondaryRepository: RepositoryConfiguration = JSON.parse(json);
 			return secondaryRepository;
 		}
-		manage() : ExecutionResult[]  {
+		manage()  {
 			// Create folder
 			if (!fs.existsSync(String(this.pullRequestNumber))){
 			    fs.mkdirSync(String(this.pullRequestNumber));
@@ -47,17 +47,17 @@ module Print.Childprocess {
 			}
 			// for testing only remove TMP!!!!!!!!!!!!
 			// Read repository Configuration file in repo
-			this.readRepositoryConfigurationTMP(this.primaryRepository.name);
-			var secondaryRepositoryConfiguration: RepositoryConfiguration = this.readRepositoryConfigurationTMP(this.primaryRepository.name);
-			this.actions = secondaryRepositoryConfiguration.actions;
+			//this.readRepositoryConfigurationTMP(this.primaryRepository.name);
+			//var secondaryRepositoryConfiguration: RepositoryConfiguration = this.readRepositoryConfigurationTMP(this.primaryRepository.name);
+			//this.actions = secondaryRepositoryConfiguration.actions;
 			// Clone secondary repository
-			if (!fs.existsSync(this.pullRequestNumber + '/' + secondaryRepositoryConfiguration.secondary)){
+			/*if (!fs.existsSync(this.pullRequestNumber + '/' + secondaryRepositoryConfiguration.secondary)){
 				this.secondaryRepository = new Childprocess.GitCommands(this.pullRequestNumber, this.user,secondaryRepositoryConfiguration.secondary ,secondaryRepositoryConfiguration.secondaryUpstream );
 				this.setup(this.secondaryRepository, this.branch);
-			}
+			}*/
 			//  Perform actions
-			var actionResult = this.executeActionList();
-			return actionResult;
+			//var actionResult = this.executeActionList();
+			//return actionResult;
 		}
 		createJSON(myClass : any) {
 		}
@@ -78,10 +78,15 @@ module Print.Childprocess {
 			else {
 				command = command + action.task + ' ' +  __dirname + '/../video/' + action.dependency;
 			}
-			var outputValue = execSync(command);
-			var outputArray = String(outputValue).split('\n');
-			var returnValue = outputArray[outputArray.length -2]
-			return returnValue;
+			try {
+				var outputValue = execSync(command);
+				var outputArray = String(outputValue).split('\n');
+				var returnValue = outputArray[outputArray.length -2]
+				return returnValue;
+			}
+			catch (ex) {
+				return 'fail'
+			}
 		}
 	}
 }

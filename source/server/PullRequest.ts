@@ -33,10 +33,9 @@ module Print.Server {
 		getDiffUrl(): string { return this.diffUrl; }
 		tryUpdate(request: Github.PullRequest): boolean {
 			var result = false;
-			console.log("attempting to update pull request")
 			if (request.created_at != request.updated_at) {
 				this.readPullRequestData(request);
-				console.log("pull request updated")
+				console.log("Updated pull request: [" + request.title + " - " + request.html_url + "]")
 				result = true;
 				this.processPullRequest();
 			}

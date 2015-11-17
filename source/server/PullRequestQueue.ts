@@ -31,7 +31,7 @@ module Print.Server {
 						if (pullRequest) {
 							pullRequest.tryUpdate(eventData.pull_request);
 						} else {
-							console.log(name + ": adding new pull request: " + eventData.pull_request.title + ", id: " + eventData.pull_request.id);
+							console.log("Added pull request: [" + pullRequest.getTitle() + " - " + pullRequest.getUrl() + "]");
 							this.requests.push(new PullRequest(eventData.pull_request));
 						}
 						LocalServer.sendResponse(response, 200, "OK");

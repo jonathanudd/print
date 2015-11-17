@@ -2,12 +2,12 @@
 var execSync = require('child_process').execSync
 module Print.Childprocess {
 	export class GitCommands {
-		private pullRequestNumber: string
+		private pullRequestNumber: number
 		private user: string
 		name: string;
 		secret: string;
 		organization: string;
-		constructor(pullRequestNumber: string, user: string, name: string, organization: string) {
+		constructor(pullRequestNumber: number, user: string, name: string, organization: string) {
 			this.pullRequestNumber = pullRequestNumber;
 			this.user = user;
 			this.name = name;

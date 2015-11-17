@@ -7,14 +7,14 @@ var execSync = require('child_process').execSync
 var fs = require("fs")
 module Print.Childprocess {
 	export class Taskmaster  {
-		private pullRequestNumber: string;
+		private pullRequestNumber: number;
 		private user: string;
 		private primaryRepository: Childprocess.GitCommands;
 		private secondaryRepository: Childprocess.GitCommands;
 		private branch: string;
 		private repositoryConfiguration: RepositoryConfiguration
 		private actions: Action[];
-		constructor(pullRequestNumber: string, user: string,name: string, organization: string, branch: string) {
+		constructor(pullRequestNumber: number, user: string,name: string, organization: string, branch: string) {
 			this.pullRequestNumber = pullRequestNumber;
 			this.user = user;
 			this.primaryRepository = new Childprocess.GitCommands(this.pullRequestNumber, this.user, name, organization);
@@ -38,8 +38,8 @@ module Print.Childprocess {
 		}
 		manage() : ExecutionResult[]  {
 			// Create folder
-			if (!fs.existsSync(this.pullRequestNumber)){
-			    fs.mkdirSync(this.pullRequestNumber);
+			if (!fs.existsSync(String(this.pullRequestNumber))){
+			    fs.mkdirSync(String(this.pullRequestNumber));
 			}
 			// Clone, set upstream, fetch and merge primary repo
 			if (!fs.existsSync(this.pullRequestNumber + '/' + this.primaryRepository.name)){

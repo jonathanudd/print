@@ -16,9 +16,12 @@ module Print.Server {
 		private diffUrl: string;
 		private taskmaster: Print.Childprocess.Taskmaster
 		constructor(request: Github.PullRequest) {
-			//constructor(pullRequestNumber: string, user: string,name: string, organization: string, branch: string) {
 			this.readPullRequestData(request);
-			this.taskmaster = new Print.Childprocess.Taskmaster(this.number, request.user, request. );
+			var user = request.user.login;
+			var repositoryName = request.head.repo.name;
+			var organization = request.base.user.login;
+			var branch = request.head.ref;
+			this.taskmaster = new Print.Childprocess.Taskmaster(this.number, user, repositoryName, organization, branch);
 		}
 		getId(): string { return this.id; }
 		getNumber(): number { return this.number; }
@@ -35,6 +38,7 @@ module Print.Server {
 				this.readPullRequestData(request);
 				console.log("pull request updated")
 				result = true;
+				this.processPullRequest();
 			}
 			return result;
 		}
@@ -48,12 +52,9 @@ module Print.Server {
 			this.url = pullRequest.html_url;
 			this.diffUrl = pullRequest.diff_url;
 		}
-<<<<<<< HEAD
-		process() {
-			//console.log("processing pull request");
-			//this.taskmaster.manage();
+		processPullRequest() {
+			console.log("processing pull request");
+			this.taskmaster.manage();
 		}
-=======
->>>>>>> 5fe95b74305ebffc6c2c258d8ddaadd14ac01d6e
 	}
 }

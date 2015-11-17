@@ -43,6 +43,13 @@ module Print.Server {
 			}
 			return result;
 		}
+		toJSON(): string {
+			var jsonObject: any[] = [];
+			this.requests.forEach(request => {
+				jsonObject.push(request.toJSON())
+			});
+			return JSON.stringify(jsonObject);
+		}
 		private verifySender(serverSignature: string, payload: string, token: string): boolean {
 			// TODO: secure compare?
 			return  "sha1=" + crypt.createHmac("sha1", token).update(payload).digest("hex") == serverSignature;

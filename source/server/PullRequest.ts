@@ -41,6 +41,24 @@ module Print.Server {
 			}
 			return result;
 		}
+		processPullRequest() {
+			console.log("processing pull request");
+			this.taskmaster.manage();
+		}
+		toJSON(): string {
+			// TODO: Is there a better way?
+			var jsonObject: any = {};
+			jsonObject["id"] = this.id;
+			jsonObject["number"] = this.number;
+			jsonObject["title"] = this.title;
+			jsonObject["description"] = this.description;
+			jsonObject["createdAt"] = this.createdAt;
+			jsonObject["updatedAt"] = this.updatedAt;
+			jsonObject["commitCount"] = this.commitCount;
+			jsonObject["url"] = this.url;
+			jsonObject["diffUrl"] = this.diffUrl;
+			return JSON.stringify(jsonObject);
+		}
 		private readPullRequestData(pullRequest: Github.PullRequest) {
 			this.id = pullRequest.id;
 			this.number = pullRequest.number;
@@ -51,10 +69,6 @@ module Print.Server {
 			this.commitCount = pullRequest.commits;
 			this.url = pullRequest.html_url;
 			this.diffUrl = pullRequest.diff_url;
-		}
-		processPullRequest() {
-			console.log("processing pull request");
-			this.taskmaster.manage();
 		}
 	}
 }

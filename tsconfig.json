@@ -25,6 +25,9 @@
 		"source/server/PullRequest.ts",
 		"source/server/PullRequestQueue.ts",
 		"source/server/LocalServer.ts",
-		"source/print.ts"
+		"source/ServerConfiguration.ts",
+		"source/print.ts",
+		"source/childprocess/Taskmaster.ts",
+		"source/childprocess/GitCommands.ts"
 	]
 }

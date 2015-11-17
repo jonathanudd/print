@@ -1,0 +1,8 @@
+{
+	"name" : "ooc-kean",
+	"secondary" : "ooc-vidproc",
+	"secondaryUpstream" : "cogneco",
+	"actions" : [
+			{"task" : "./test.sh", "dependency" : "none"}
+	]
+}

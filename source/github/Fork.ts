@@ -2,7 +2,7 @@
 /// <reference path="Repository" />
 
 module Print.Github {
-	export class Head {
+	export class Fork {
 		label: string;
 		ref: string;
 		sha: string;

@@ -10,7 +10,7 @@ var crypt = require("crypto");
 module Print.Server {
 	export class PullRequestQueue {
 		private requests: PullRequest[] = [];
-		constructor(private name: string, private organization: string, /* do we want to hold this in memory? */ private token: string) {
+		constructor(private name: string, private organization: string, private token: string) {
 			Github.Api.PullRequest.queryOpenPullRequests(organization, name, (requests: Server.PullRequest[]) => {
 				this.requests = requests;
 			});

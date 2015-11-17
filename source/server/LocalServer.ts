@@ -13,7 +13,7 @@ module Print.Server {
 		constructor(configurationFile: string) {
 			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
 			this.configurations.forEach(configuration => {
-				this.pullRequestQueues.push(new PullRequestQueue(configuration.name, configuration.organization));
+				this.pullRequestQueues.push(new PullRequestQueue(configuration.name, configuration.organization, configuration.secret));
 			});
 			this.server = http.createServer((request: any, response: any) => {
 				this.requestCallback(request, response)

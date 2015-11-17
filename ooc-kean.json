@@ -3,6 +3,6 @@
 	"secondary" : "ooc-vidproc",
 	"secondaryUpstream" : "cogneco",
 	"actions" : [
-			{"task" : "./test.sh", "dependency" : "none"},
+			{"task" : "./test.sh", "dependency" : "none"}
 	]
 }

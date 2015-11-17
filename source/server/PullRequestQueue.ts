@@ -5,10 +5,12 @@
 /// <reference path="PullRequest" />
 /// <reference path="LocalServer" />
 
+var crypt = require("crypto");
+
 module Print.Server {
 	export class PullRequestQueue {
 		private requests: PullRequest[] = [];
-		constructor(private name: string, private organization: string) {
+		constructor(private name: string, private organization: string, /* do we want to hold this in memory? */ private token: string) {
 			Github.Api.PullRequest.queryOpenPullRequests(organization, name, (requests: Server.PullRequest[]) => {
 				this.requests = requests;
 			});
@@ -21,18 +23,28 @@ module Print.Server {
 					buffer += chunk;
 				});
 				request.on("end", () => {
-					var eventData = <Github.Events.PullRequestEvent>JSON.parse(buffer);
-					var pullRequest = this.find(eventData.pull_request.id);
-					if (pullRequest) {
-						pullRequest.tryUpdate(eventData.pull_request);
+					var header = JSON.parse(JSON.stringify(request.headers));
+					var serverSignature: string = header["x-hub-signature"].toString()
+					if (this.verifySender(serverSignature, buffer)) {
+						var eventData = <Github.Events.PullRequestEvent>JSON.parse(buffer);
+						var pullRequest = this.find(eventData.pull_request.id);
+						if (pullRequest) {
+							pullRequest.tryUpdate(eventData.pull_request);
+						} else {
+							console.log(name + ": adding new pull request: " + eventData.pull_request.title + ", id: " + eventData.pull_request.id);
+							this.requests.push(new PullRequest(eventData.pull_request));
+						}
+						LocalServer.sendResponse(response, 200, "OK");
 					} else {
-						console.log(name + ": adding new pull request: " + eventData.pull_request.title + ", id: " + eventData.pull_request.id);
-						this.requests.push(new PullRequest(eventData.pull_request));
+						console.log("Unauthorized sender");
 					}
-					LocalServer.sendResponse(response, 200, "OK");
 				});
 			}
 			return result;
+		}
+		private verifySender(serverSignature: string, payload: string): boolean {
+			// TODO: secure compare?
+			return "sha1=" + crypt.createHmac("sha1", this.token).update(payload).digest("hex") == serverSignature;
 		}
 		private find(pullRequestId: string): PullRequest {
 			var result: PullRequest;

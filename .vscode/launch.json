@@ -8,6 +8,7 @@
 			// Type of configuration.
 			"type": "node",
 			// Workspace relative or absolute path to the program.
+			"preLaunchTask": "tsc",
 			"program": "build/print.js",
 			// Automatically stop program after launch.
 			"stopOnEntry": false,

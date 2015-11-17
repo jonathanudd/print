@@ -2,32 +2,34 @@
 /// <reference path="../configuration/ServerConfiguration" />
 /// <reference path="../github/events/PullRequestEvent" />
 /// <reference path="../github/api/PullRequest" />
-
 /// <reference path="PullRequest" />
+/// <reference path="LocalServer" />
 
 module Print.Server {
 	export class PullRequestQueue {
 		private requests: PullRequest[] = [];
 		constructor(private name: string, private organization: string) {
 			Github.Api.PullRequest.queryOpenPullRequests(organization, name, (requests: Server.PullRequest[]) => {
-				this.requests = requests
+				this.requests = requests;
 			});
 		}
-		process(name: string, request: any): boolean {
+		process(name: string, request: any, response: any): boolean {
 			var result: boolean;
+			var buffer: string = "";
 			if (result = (name == this.name)) {
-				request.on("data", (payload: any) => {
-					//
-					// TODO: We need a buffer here, as 'payload' might not contain all of the data
-					//
-					var eventData = <Github.Events.PullRequestEvent>JSON.parse(payload);
+				request.on("data", (chunk: any) => {
+					buffer += chunk;
+				});
+				request.on("end", () => {
+					var eventData = <Github.Events.PullRequestEvent>JSON.parse(buffer);
 					var pullRequest = this.find(eventData.pull_request.id);
 					if (pullRequest) {
 						pullRequest.tryUpdate(eventData.pull_request);
 					} else {
-						console.log("Adding new pull request: " + eventData.pull_request.title + ", id: " + eventData.pull_request.id);
+						console.log(name + ": adding new pull request: " + eventData.pull_request.title + ", id: " + eventData.pull_request.id);
 						this.requests.push(new PullRequest(eventData.pull_request));
 					}
+					LocalServer.sendResponse(response, 200, "OK");
 				});
 			}
 			return result;

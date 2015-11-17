@@ -26,7 +26,7 @@ module Print.Server {
 		}
 		stop() {
 			this.server.close(() => {
-				console.log("print server closed");
+				console.log("server closed");
 			});
 		}
 		private requestCallback(request: any, response: any) {
@@ -34,22 +34,18 @@ module Print.Server {
 			var name = url.substr(7, url.length - 7);
 			switch (<string>request.method) {
 				case "POST":
-					if (this.pullRequestQueues.some(queue => { return queue.process(name, request); })) {
-						request.on("end", () => {
-							this.sendResponse(response, 200, "OK");
-						});
-					} else {
-						this.sendResponse(response, 404, "Not found");
+					if (!this.pullRequestQueues.some(queue => { return queue.process(name, request, response); })) {
+						LocalServer.sendResponse(response, 404, "Not found");
 					}
 					break;
 				case "GET":
 					console.log("Received a GET request - responding with [400: Bad request]");
 				default:
-					this.sendResponse(response, 400, "Bad request");
+					LocalServer.sendResponse(response, 400, "Bad request");
 					break;
 			}
 		}
-		private sendResponse(responseObject: any, code: number, message: string) {
+		static sendResponse(responseObject: any, code: number, message: string) {
 			responseObject.writeHead(code, message, { "Content-Type": "text/plain" });
 			responseObject.end();
 		}

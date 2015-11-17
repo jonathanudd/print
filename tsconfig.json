@@ -17,7 +17,7 @@
 		"source/github/events/PushEvent.ts",
 		"source/github/Author.ts",
 		"source/github/Commit.ts",
-		"source/github/Head.ts",
+		"source/github/Fork",
 		"source/github/Owner.ts",
 		"source/github/PullRequest.ts",
 		"source/github/Repository.ts",

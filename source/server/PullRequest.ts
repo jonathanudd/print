@@ -48,9 +48,12 @@ module Print.Server {
 			this.url = pullRequest.html_url;
 			this.diffUrl = pullRequest.diff_url;
 		}
+<<<<<<< HEAD
 		process() {
 			//console.log("processing pull request");
 			//this.taskmaster.manage();
 		}
+=======
+>>>>>>> 5fe95b74305ebffc6c2c258d8ddaadd14ac01d6e
 	}
 }

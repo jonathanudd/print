@@ -44,6 +44,7 @@ module Print.Server {
 		}
 		private readPullRequestData(pullRequest: Github.PullRequest) {
 			this.id = pullRequest.id;
+			this.number = pullRequest.number;
 			this.title = pullRequest.title;
 			this.description = pullRequest.body;
 			this.createdAt = pullRequest.created_at;

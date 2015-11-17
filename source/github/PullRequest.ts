@@ -3,8 +3,8 @@
 
 module Print.Github {
 	export class PullRequest {
-		id: string;
 		url: string;
+		id: string;
 		html_url: string;
 		diff_url: string;
 		number: number;

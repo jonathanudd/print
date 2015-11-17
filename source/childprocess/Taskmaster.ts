@@ -12,8 +12,8 @@ module Print.Childprocess {
 		private primaryRepository: Childprocess.GitCommands;
 		private secondaryRepository: Childprocess.GitCommands;
 		private branch: string;
-		private repositoryConfiguration: RepositoryConfiguration
-		private actions: Action[];
+		private repositoryConfiguration: RepositoryConfiguration;
+		private actions: Action[] = [];
 		constructor(pullRequestNumber: number, user: string,name: string, organization: string, branch: string) {
 			this.pullRequestNumber = pullRequestNumber;
 			this.user = user;

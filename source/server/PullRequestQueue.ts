@@ -25,7 +25,7 @@ module Print.Server {
 				request.on("end", () => {
 					var header = JSON.parse(JSON.stringify(request.headers));
 					var serverSignature: string = header["x-hub-signature"].toString()
-					if (this.verifySender(serverSignature, buffer)) {
+					if (this.verifySender(serverSignature, buffer, this.token)) {
 						var eventData = <Github.Events.PullRequestEvent>JSON.parse(buffer);
 						var pullRequest = this.find(eventData.pull_request.id);
 						if (pullRequest) {
@@ -37,14 +37,15 @@ module Print.Server {
 						LocalServer.sendResponse(response, 200, "OK");
 					} else {
 						console.log("Unauthorized sender");
+						LocalServer.sendResponse(response, 404, "Not found");
 					}
 				});
 			}
 			return result;
 		}
-		private verifySender(serverSignature: string, payload: string): boolean {
+		private verifySender(serverSignature: string, payload: string, token: string): boolean {
 			// TODO: secure compare?
-			return "sha1=" + crypt.createHmac("sha1", this.token).update(payload).digest("hex") == serverSignature;
+			return  "sha1=" + crypt.createHmac("sha1", token).update(payload).digest("hex") == serverSignature;
 		}
 		private find(pullRequestId: string): PullRequest {
 			var result: PullRequest;
@@ -56,14 +57,6 @@ module Print.Server {
 				return false;
 			});
 			return result;
-		}
-		private initializePullRequests(requests: PullRequest[]) {
-			var result: PullRequest[] = []
-			requests.forEach(request => {
-				console.log("init PR: " + request.getTitle() + ", id: " + request.getId())
-				result.push(request);
-			})
-			this.requests.concat(result);
 		}
 	}
 }

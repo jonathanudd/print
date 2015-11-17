@@ -1,6 +1,7 @@
 /// <reference path="../../typings/node/node.d.ts" />
 /// <reference path="../configuration/ServerConfiguration" />
 /// <reference path="../github/events/PullRequestEvent" />
+/// <reference path="../childprocess/Taskmaster" />
 
 module Print.Server {
 	export class PullRequest {
@@ -13,8 +14,11 @@ module Print.Server {
 		private commitCount: number;
 		private url: string;
 		private diffUrl: string;
+		private taskmaster: Print.Childprocess.Taskmaster
 		constructor(request: Github.PullRequest) {
-			this.readPullRequestData(request)
+			//constructor(pullRequestNumber: string, user: string,name: string, organization: string, branch: string) {
+			this.readPullRequestData(request);
+			this.taskmaster = new Print.Childprocess.Taskmaster(this.number, request.user, request. );
 		}
 		getId(): string { return this.id; }
 		getNumber(): number { return this.number; }
@@ -43,6 +47,10 @@ module Print.Server {
 			this.commitCount = pullRequest.commits;
 			this.url = pullRequest.html_url;
 			this.diffUrl = pullRequest.diff_url;
+		}
+		process() {
+			//console.log("processing pull request");
+			//this.taskmaster.manage();
 		}
 	}
 }

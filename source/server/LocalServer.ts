@@ -13,9 +13,13 @@ module Print.Server {
 		private port = 48085;
 		private configurations: ServerConfiguration[] = [];
 		private pullRequestQueues: PullRequestQueue[] = [];
+		private clientId: string = "";
+		private clientSecret: string = "";
 		constructor(configurationFile: string) {
 			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
 			this.configurations.forEach(configuration => {
+				this.clientId = configuration.clientId;
+				this.clientSecret = configuration.clientSecret;
 				this.pullRequestQueues.push(new PullRequestQueue(configuration.name, configuration.organization, configuration.secret));
 			});
 			this.server = http.createServer((request: any, response: any) => {
@@ -44,13 +48,13 @@ module Print.Server {
 				case "GET":
 					if (url.pathname == "/") {
 						if (url.search == "") {
-							response.writeHead(301, {Location: "https://github.com/login/oauth/authorize?scope=user:email&client_id="+process.env.PRINT_CLIENT_ID});
+							response.writeHead(301, { Location: "https://github.com/login/oauth/authorize?scope=user:email&client_id=" + this.clientId });
 							response.end();
 						}
 						else if (url.query.code != "") {
 							var post_data = querystring.stringify({
-								"client_id": process.env.PRINT_CLIENT_ID,
-								"client_secret": process.env.PRINT_CLIENT_SECRET,
+								"client_id": this.clientId,
+								"client_secret": this.clientSecret,
 								"code": url.query.code
 							});
 							var post_options = {
@@ -62,12 +66,12 @@ module Print.Server {
 									"Accept": "application/json"
 								}
 							};
-							var post_request = https.request(post_options, function(resp: any) {
-								resp.on("data", function(data: any) {
+							var post_request = https.request(post_options, (resp: any) => {
+								resp.on("data", (data: any) => {
 									//
 									// TODO: save access_token
 									//
-									response.writeHead(301, {Location: "/print-client"});
+									response.writeHead(301, { Location: "/print-client" });
 									response.end();
 								});
 							});
@@ -97,13 +101,13 @@ module Print.Server {
 			responseObject.end();
 		}
 		static sendFileResponse(localPath: String, responseObject: any, contentType: String) {
-			fs.readFile(localPath, function(err: any, contents: String) {
+			fs.readFile(localPath, (err: any, contents: String) => {
 				if(!err) {
-					responseObject.writeHead(200, "OK", {"Content-Length": contents.length, "Content-Type": contentType})
+					responseObject.writeHead(200, "OK", { "Content-Length": contents.length, "Content-Type": contentType })
 					responseObject.end(contents);
 				} 
 				else {
-					responseObject.writeHead(500, "Error when reading file", {"Content-Type": "text/plain"});
+					responseObject.writeHead(500, "Error when reading file", { "Content-Type": "text/plain" });
 					responseObject.end();
 				}
 			});

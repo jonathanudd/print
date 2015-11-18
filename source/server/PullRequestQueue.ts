@@ -15,6 +15,7 @@ module Print.Server {
 				this.requests = requests;
 			});
 		}
+		getName(): string { return this.name; }
 		process(name: string, request: any, response: any): boolean {
 			var result: boolean;
 			var buffer: string = "";
@@ -54,7 +55,7 @@ module Print.Server {
 			// TODO: secure compare?
 			return  "sha1=" + crypt.createHmac("sha1", token).update(payload).digest("hex") == serverSignature;
 		}
-		private find(pullRequestId: string): PullRequest {
+		find(pullRequestId: string): PullRequest {
 			var result: PullRequest;
 			this.requests.some(request => {
 				if (request.getId() == pullRequestId) {

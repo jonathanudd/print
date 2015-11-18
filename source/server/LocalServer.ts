@@ -80,13 +80,37 @@ module Print.Server {
 						}
 					}
 					else if (url.pathname.substr(0,13) == "/print-client") {
-						var filename: String;
+						var filename: string;
 						if (url.pathname == "/print-client")
 							filename = "print-client/index.html";
 						else
 							filename = url.pathname.substr(1);
 						var contentType = LocalServer.getContentType(filename);
 						LocalServer.sendFileResponse(filename, response, contentType);
+					}
+					else if(url.pathname.substr(0,6) == "/print") {
+						if (url.pathname.split("/")[3] == "pr") {
+							var repo = url.pathname.split("/")[2];
+							this.pullRequestQueues.forEach(queue => {
+								if (queue.getName() == repo) {
+									var pr = queue.find(url.pathname.split("/")[4]);
+									if (pr) {
+										response.writeHead(200, "OK", {"Content-Type": "application/json" })
+										response.end(pr.toJSON());
+									}
+								}
+							});
+						}
+						else {
+							var repo = url.href.substr(7, url.href.length - 7);
+							this.pullRequestQueues.forEach(queue => {
+								if (queue.getName() == repo) {
+									response.writeHead(200, "OK", {"Content-Type": "application/json" })
+									response.end(queue.toJSON());
+								}
+							});
+						}
+						LocalServer.sendResponse(response, 400, "Bad request");
 					}
 					else
 						LocalServer.sendResponse(response, 400, "Bad request"); 
@@ -100,8 +124,8 @@ module Print.Server {
 			responseObject.writeHead(code, message, { "Content-Type": "text/plain" });
 			responseObject.end();
 		}
-		static sendFileResponse(localPath: String, responseObject: any, contentType: String) {
-			fs.readFile(localPath, (err: any, contents: String) => {
+		static sendFileResponse(localPath: string, responseObject: any, contentType: string) {
+			fs.readFile(localPath, (err: any, contents: string) => {
 				if(!err) {
 					responseObject.writeHead(200, "OK", { "Content-Length": contents.length, "Content-Type": contentType })
 					responseObject.end(contents);
@@ -112,9 +136,9 @@ module Print.Server {
 				}
 			});
 		}
-		static getContentType(filename: String) {
+		static getContentType(filename: string) {
 			var ext = filename.split(".").pop();
-			var contenttype: String;
+			var contenttype: string;
 			switch (ext) {
 				case "html":
 					contenttype = "text/html";

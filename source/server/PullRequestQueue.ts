@@ -47,7 +47,7 @@ module Print.Server {
 		toJSON(): string {
 			var jsonObject: any[] = [];
 			this.requests.forEach(request => {
-				jsonObject.push(request.toJSON())
+				jsonObject.push(JSON.parse(request.toJSON()));
 			});
 			return JSON.stringify(jsonObject);
 		}

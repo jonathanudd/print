@@ -50,6 +50,24 @@ module Print.Childprocess {
 				return -1;
 			}
 		}
+		resetToOrigin(repo: string) {
+			try {
+				execSync('cd ' + this.pullRequestNumber + '/' + repo + ' && git reset --hard origin/master');
+				return 0;
+			}
+			catch (ex) {
+				return -1;
+			}
+		}
+		fetchFromOrigin(repo: string) {
+			try {
+				execSync('cd ' + this.pullRequestNumber + '/' + repo + ' && git fetch origin');
+				return 0;
+			}
+			catch (ex) {
+				return -1;
+			}
+		}
     /*all() {
       execSync('git clone -b '+ this.branch + ' --single-branch https://github.com/'+this.user+'/'+this.repo +
       '&& cd ' + this.pullRequestNumber + ' && git remote add upstream https://github.com/cogneco' + this.repo + '/' + this.repo +

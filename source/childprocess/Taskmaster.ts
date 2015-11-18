@@ -28,32 +28,44 @@ module Print.Childprocess {
 		}
 		readRepositoryConfiguration(repository: string) {
 			var json = fs.readFileSync(this.pullRequestNumber +"/"+ this.primaryRepository.name +"/"+ repository+".json", "utf-8");
-			var secondaryRepository: RepositoryConfiguration = JSON.parse(json);
-			return secondaryRepository;
+			var repositoryConfiguration: RepositoryConfiguration = JSON.parse(json);
+			return repositoryConfiguration;
 		}
 		readRepositoryConfigurationTMP(repositoryName: string) : RepositoryConfiguration {
 			var json = fs.readFileSync(repositoryName+".json", "utf-8");
-			var secondaryRepository: RepositoryConfiguration = JSON.parse(json);
-			return secondaryRepository;
+			var repositoryConfiguration: RepositoryConfiguration = JSON.parse(json);
+			return repositoryConfiguration;
 		}
 		manage() : ExecutionResult[]   {
+			console.log('manage');
 			// Create folder
 			if (!fs.existsSync(String(this.pullRequestNumber))){
 			    fs.mkdirSync(String(this.pullRequestNumber));
 			}
+
 			// Clone, set upstream, fetch and merge primary repo
 			if (!fs.existsSync(this.pullRequestNumber + '/' + this.primaryRepository.name)){
 				this.setup(this.primaryRepository, this.branch);
 			}
+			else {
+				this.primaryRepository.fetchFromOrigin(this.primaryRepository.name);
+				this.primaryRepository.resetToOrigin(this.primaryRepository.name);
+				this.primaryRepository.merge(this.primaryRepository.name);
+			}
+
 			// Read repository Configuration file in repo
-			var secondaryRepositoryConfiguration: RepositoryConfiguration = this.readRepositoryConfigurationTMP(this.primaryRepository.name);
-			this.actions = secondaryRepositoryConfiguration.actions;
+			var repositoryConfiguration: RepositoryConfiguration = this.readRepositoryConfiguration(this.primaryRepository.name);
+
 			// Clone secondary repository
-			/*if (!fs.existsSync(this.pullRequestNumber + '/' + secondaryRepositoryConfiguration.secondary)){
-				this.secondaryRepository = new Childprocess.GitCommands(this.pullRequestNumber, this.user,secondaryRepositoryConfiguration.secondary ,secondaryRepositoryConfiguration.secondaryUpstream );
-				this.setup(this.secondaryRepository, this.branch);
-			}*/
+			if(!(repositoryConfiguration.secondary == 'none')) {
+				if (!fs.existsSync(this.pullRequestNumber + '/' + repositoryConfiguration.secondary)){
+					this.secondaryRepository = new Childprocess.GitCommands(this.pullRequestNumber, this.user, repositoryConfiguration.secondary , repositoryConfiguration.secondaryUpstream );
+					this.setup(this.secondaryRepository, this.branch);
+				}
+			}
+			
 			//  Perform actions
+			this.actions = repositoryConfiguration.actions;
 			var actionResult = this.executeActionList();
 			console.log(actionResult);
 			return actionResult;

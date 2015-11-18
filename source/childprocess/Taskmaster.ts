@@ -20,7 +20,7 @@ module Print.Childprocess {
 			this.primaryRepository = new Childprocess.GitCommands(this.pullRequestNumber, this.user, name, organization);
 			this.branch = branch;
 		}
-		setup(repository: Childprocess.GitCommands, branch: string) : string {
+		/*setup(repository: Childprocess.GitCommands, branch: string) : string {
 			var ret1 = repository.clone(repository.name, branch);
 			var ret2 = repository.setUpstream(repository.name, repository.organization);
 			var ret3 = repository.fetch(repository.name);
@@ -31,7 +31,7 @@ module Print.Childprocess {
 			else {
 				return 'OK'
 			}
-		}
+		}*/
 		readRepositoryConfiguration(repository: string) {
 			var json = fs.readFileSync(this.pullRequestNumber +"/"+ this.primaryRepository.name +"/"+ repository+".json", "utf-8");
 			var repositoryConfiguration: RepositoryConfiguration = JSON.parse(json);
@@ -52,19 +52,22 @@ module Print.Childprocess {
 
 			// Clone, set upstream, fetch and merge primary repo
 			if (!fs.existsSync(this.pullRequestNumber + '/' + this.primaryRepository.name)){
-				var ret = this.setup(this.primaryRepository, this.branch);
+				//var ret = this.setup(this.primaryRepository, this.branch);
+				var ret = this.primaryRepository.clone(this.primaryRepository.name, this.branch);
 				gitResult.push(new ExecutionResult("clone",ret));
+				this.primaryRepository.setUpstream(this.primaryRepository.name, this.primaryRepository.organization);
+				var ret3 = this.primaryRepository.fetch(this.primaryRepository.name);
+				gitResult.push(new ExecutionResult("fetch",ret));
+				var ret4 = this.primaryRepository.merge(this.primaryRepository.name);
+				gitResult.push(new ExecutionResult("merge",ret));
 			}
 			else {
 				var ret1 = this.primaryRepository.fetchFromOrigin(this.primaryRepository.name);
+				gitResult.push(new ExecutionResult("fetchOrigin",ret1));
 				var ret2 = this.primaryRepository.resetToOrigin(this.primaryRepository.name);
+				gitResult.push(new ExecutionResult("reset",ret2));
 				var ret3 = this.primaryRepository.merge(this.primaryRepository.name);
-				if(ret1+ret2+ret3 < 0) {
-					gitResult.push(new ExecutionResult("fetch",'fail'));
-				}
-				else {
-					gitResult.push(new ExecutionResult("fetch",'OK'));
-				}
+				gitResult.push(new ExecutionResult("mergeOrigin",ret3));
 			}
 
 			// Read repository Configuration file in repo
@@ -74,14 +77,14 @@ module Print.Childprocess {
 			if(!(repositoryConfiguration.secondary == 'none')) {
 				if (!fs.existsSync(this.pullRequestNumber + '/' + repositoryConfiguration.secondary)){
 					this.secondaryRepository = new Childprocess.GitCommands(this.pullRequestNumber, this.user, repositoryConfiguration.secondary , repositoryConfiguration.secondaryUpstream );
-					this.setup(this.secondaryRepository, this.branch);
+					//this.setup(this.secondaryRepository, this.branch);
 				}
 			}
 
 			//  Perform actions
 			this.actions = repositoryConfiguration.actions;
 			var actionResult = this.executeActionList();
-			console.log(actionResult.concat(gitResult));
+			console.log(gitResult.concat(actionResult));
 			return actionResult;
 		}
 		createJSON(myClass : any) {

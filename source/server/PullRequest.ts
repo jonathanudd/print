@@ -22,6 +22,7 @@ module Print.Server {
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
 			this.taskmaster = new Print.Childprocess.Taskmaster(this.number, user, repositoryName, organization, branch);
+			this.processPullRequest();
 		}
 		getId(): string { return this.id; }
 		getNumber(): number { return this.number; }

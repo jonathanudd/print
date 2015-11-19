@@ -38,6 +38,7 @@ module Print.Server {
 		tryUpdate(action: string, request: Github.PullRequest): boolean {
 			var result = false;
 			if (action == "closed") {
+				console.log("Closed pull request: [" + request.title + " - " + request.html_url + "]");
 				this.closed = true;
 			} else {
 				if (request.created_at != request.updated_at) {
@@ -50,7 +51,6 @@ module Print.Server {
 			return result;
 		}
 		processPullRequest() {
-			console.log("processing pull request");
 			this.taskmaster.manage();
 		}
 		toJSON(): string {

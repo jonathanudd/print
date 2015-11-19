@@ -37,7 +37,7 @@ module Print.Server {
 			});
 		}
 		private requestCallback(request: any, response: any) {
-			var url = urlparser.parse(request.url, true);
+			var url = urlparser.parse(request.url.toLowerCase(), true);
 			var name = url.href.substr(7, url.href.length - 7);
 			switch (<string>request.method) {
 				case "POST":
@@ -101,14 +101,24 @@ module Print.Server {
 								}
 							});
 						}
-						else {
-							var repo = url.href.substr(7, url.href.length - 7);
+						else if (url.pathname.split("/")[2]) {
+							var repo = url.pathname.split("/")[2];
 							this.pullRequestQueues.forEach(queue => {
 								if (queue.getName() == repo) {
 									response.writeHead(200, "OK", {"Content-Type": "application/json" })
 									response.end(queue.toJSON());
 								}
 							});
+						}
+						else {
+							if (this.pullRequestQueues.length > 0) {
+								var repos: string[] = [];
+								this.pullRequestQueues.forEach(queue => {
+									repos.push(queue.getName());
+								});
+								response.writeHead(200, "OK", {"Content-Type": "application/json" })
+								response.end(JSON.stringify(repos));
+							} 
 						}
 						LocalServer.sendResponse(response, 400, "Bad request");
 					}

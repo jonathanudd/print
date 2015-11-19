@@ -79,7 +79,7 @@ module Print.Server {
 							post_request.end();
 						}
 					}
-					else if (url.pathname.substr(0,13) == "/print-client") {
+					else if (url.pathname.substr(0, 13) == "/print-client") {
 						var filename: string;
 						if (url.pathname == "/print-client")
 							filename = "print-client/index.html";
@@ -88,14 +88,14 @@ module Print.Server {
 						var contentType = LocalServer.getContentType(filename);
 						LocalServer.sendFileResponse(filename, response, contentType);
 					}
-					else if(url.pathname.substr(0,6) == "/print") {
+					else if (url.pathname.substr(0, 6) == "/print") {
 						if (url.pathname.split("/")[3] == "pr") {
 							var repo = url.pathname.split("/")[2];
 							this.pullRequestQueues.forEach(queue => {
 								if (queue.getName() == repo) {
 									var pr = queue.find(url.pathname.split("/")[4]);
 									if (pr) {
-										response.writeHead(200, "OK", {"Content-Type": "application/json" })
+										response.writeHead(200, "OK", { "Content-Type": "application/json" })
 										response.end(pr.toJSON());
 									}
 								}
@@ -105,7 +105,7 @@ module Print.Server {
 							var repo = url.pathname.split("/")[2];
 							this.pullRequestQueues.forEach(queue => {
 								if (queue.getName() == repo) {
-									response.writeHead(200, "OK", {"Content-Type": "application/json" })
+									response.writeHead(200, "OK", { "Content-Type": "application/json" })
 									response.end(queue.toJSON());
 								}
 							});
@@ -116,14 +116,14 @@ module Print.Server {
 								this.pullRequestQueues.forEach(queue => {
 									repos.push(queue.getName());
 								});
-								response.writeHead(200, "OK", {"Content-Type": "application/json" })
+								response.writeHead(200, "OK", { "Content-Type": "application/json" })
 								response.end(JSON.stringify(repos));
-							} 
+							}
 						}
 						LocalServer.sendResponse(response, 400, "Bad request");
 					}
 					else
-						LocalServer.sendResponse(response, 400, "Bad request"); 
+						LocalServer.sendResponse(response, 400, "Bad request");
 					break;
 				default:
 					LocalServer.sendResponse(response, 400, "Bad request");
@@ -136,10 +136,10 @@ module Print.Server {
 		}
 		static sendFileResponse(localPath: string, responseObject: any, contentType: string) {
 			fs.readFile(localPath, (err: any, contents: string) => {
-				if(!err) {
+				if (!err) {
 					responseObject.writeHead(200, "OK", { "Content-Length": contents.length, "Content-Type": contentType })
 					responseObject.end(contents);
-				} 
+				}
 				else {
 					responseObject.writeHead(500, "Error when reading file", { "Content-Type": "text/plain" });
 					responseObject.end();

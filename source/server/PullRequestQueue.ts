@@ -30,7 +30,8 @@ module Print.Server {
 						var eventData = <Github.Events.PullRequestEvent>JSON.parse(buffer);
 						var pullRequest = this.find(eventData.pull_request.id);
 						if (pullRequest) {
-							pullRequest.tryUpdate(eventData.pull_request);
+							// TODO: Check action to see if its closed
+							pullRequest.tryUpdate(eventData.action, eventData.pull_request);
 						} else {
 							console.log("Added pull request: [" + pullRequest.getTitle() + " - " + pullRequest.getUrl() + "]");
 							this.requests.push(new PullRequest(eventData.pull_request));

@@ -14,14 +14,16 @@ module Print.Server {
 		private commitCount: number;
 		private url: string;
 		private diffUrl: string;
+		private closed: boolean = false;
+		private repositoryName: string;
 		private taskmaster: Print.Childprocess.Taskmaster
 		constructor(request: Github.PullRequest) {
 			this.readPullRequestData(request);
 			var user = request.user.login;
-			var repositoryName = request.head.repo.name;
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
-			this.taskmaster = new Print.Childprocess.Taskmaster(this.number, user, repositoryName, organization, branch);
+			this.repositoryName = request.head.repo.name;
+			this.taskmaster = new Print.Childprocess.Taskmaster(this.number, user, this.repositoryName, organization, branch);
 		}
 		getId(): string { return this.id; }
 		getNumber(): number { return this.number; }
@@ -31,13 +33,18 @@ module Print.Server {
 		getCommitCount(): number { return this.commitCount; }
 		getUrl(): string { return this.url; }
 		getDiffUrl(): string { return this.diffUrl; }
-		tryUpdate(request: Github.PullRequest): boolean {
+		getRepositoryName(): string { return this.repositoryName; }
+		tryUpdate(action: string, request: Github.PullRequest): boolean {
 			var result = false;
-			if (request.created_at != request.updated_at) {
-				this.readPullRequestData(request);
-				console.log("Updated pull request: [" + request.title + " - " + request.html_url + "]")
-				result = true;
-				this.processPullRequest();
+			if (action == "closed") {
+				this.closed = true;
+			} else {
+				if (request.created_at != request.updated_at) {
+					this.readPullRequestData(request);
+					console.log("Updated pull request: [" + request.title + " - " + request.html_url + "]")
+					result = true;
+					this.processPullRequest();
+				}
 			}
 			return result;
 		}
@@ -57,6 +64,8 @@ module Print.Server {
 			jsonObject["commitCount"] = this.commitCount;
 			jsonObject["url"] = this.url;
 			jsonObject["diffUrl"] = this.diffUrl;
+			jsonObject["closed"] = this.closed;
+			jsonObject["repositoryName"] = this.repositoryName;
 			return JSON.stringify(jsonObject);
 		}
 		private readPullRequestData(pullRequest: Github.PullRequest) {

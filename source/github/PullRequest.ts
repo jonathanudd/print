@@ -14,6 +14,7 @@ module Print.Github {
 		body: string;
 		created_at: string;
 		updated_at: string;
+		statuses_url: string;
 		head: Fork;
 		base: Fork;
 		merged: boolean;

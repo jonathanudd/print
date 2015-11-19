@@ -1,10 +1,10 @@
 module Print {
 	export class ExecutionResult {
-		task: string;
-		result: string;
-		constructor(task : string, result : string) {
+		constructor(private task: string, private result : string) {
 			this.task = task;
 			this.result = result;
 		}
+		getTask(): string { return this.task; }
+		getResult(): string { return this.result; }
 	}
 }

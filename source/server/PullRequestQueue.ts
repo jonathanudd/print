@@ -15,6 +15,7 @@ module Print.Server {
 				this.requests = requests;
 			});
 		}
+		getName(): string { return this.name; }
 		process(name: string, request: any, response: any): boolean {
 			var result: boolean;
 			var buffer: string = "";
@@ -29,9 +30,10 @@ module Print.Server {
 						var eventData = <Github.Events.PullRequestEvent>JSON.parse(buffer);
 						var pullRequest = this.find(eventData.pull_request.id);
 						if (pullRequest) {
-							pullRequest.tryUpdate(eventData.pull_request);
+							// TODO: Check action to see if its closed
+							pullRequest.tryUpdate(eventData.action, eventData.pull_request);
 						} else {
-							console.log(name + ": adding new pull request: " + eventData.pull_request.title + ", id: " + eventData.pull_request.id);
+							console.log("Added pull request: [" + pullRequest.getTitle() + " - " + pullRequest.getUrl() + "]");
 							this.requests.push(new PullRequest(eventData.pull_request));
 						}
 						LocalServer.sendResponse(response, 200, "OK");
@@ -43,11 +45,18 @@ module Print.Server {
 			}
 			return result;
 		}
+		toJSON(): string {
+			var jsonObject: any[] = [];
+			this.requests.forEach(request => {
+				jsonObject.push(JSON.parse(request.toJSON()));
+			});
+			return JSON.stringify(jsonObject);
+		}
 		private verifySender(serverSignature: string, payload: string, token: string): boolean {
 			// TODO: secure compare?
 			return  "sha1=" + crypt.createHmac("sha1", token).update(payload).digest("hex") == serverSignature;
 		}
-		private find(pullRequestId: string): PullRequest {
+		find(pullRequestId: string): PullRequest {
 			var result: PullRequest;
 			this.requests.some(request => {
 				if (request.getId() == pullRequestId) {

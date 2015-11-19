@@ -11,19 +11,20 @@ module Print.Server {
 		private description: string;
 		private createdAt: string;
 		private updatedAt: string;
+		private statusesUrl: string;
 		private commitCount: number;
 		private url: string;
 		private diffUrl: string;
+		private closed: boolean = false;
+		private repositoryName: string;
 		private taskmaster: Print.Childprocess.Taskmaster
 		constructor(request: Github.PullRequest) {
 			this.readPullRequestData(request);
 			var user = request.user.login;
-			var repositoryName = request.head.repo.name;
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
-			this.taskmaster = new Print.Childprocess.Taskmaster(this.number, user, repositoryName, organization, branch);
-			//var jsonResult = this.processPullRequest();
-
+			this.repositoryName = request.head.repo.name;
+			this.taskmaster = new Print.Childprocess.Taskmaster(this.number, user, this.repositoryName, organization, branch);
 		}
 		getId(): string { return this.id; }
 		getNumber(): number { return this.number; }
@@ -33,15 +34,39 @@ module Print.Server {
 		getCommitCount(): number { return this.commitCount; }
 		getUrl(): string { return this.url; }
 		getDiffUrl(): string { return this.diffUrl; }
-		tryUpdate(request: Github.PullRequest): boolean {
+		getRepositoryName(): string { return this.repositoryName; }
+		tryUpdate(action: string, request: Github.PullRequest): boolean {
 			var result = false;
-			if (request.created_at != request.updated_at) {
-				this.readPullRequestData(request);
-				console.log("Updated pull request: [" + request.title + " - " + request.html_url + "]")
-				result = true;
-				this.processPullRequest();
+			if (action == "closed") {
+				console.log("Closed pull request: [" + request.title + " - " + request.html_url + "]");
+				this.closed = true;
+			} else {
+				if (request.created_at != request.updated_at) {
+					this.readPullRequestData(request);
+					console.log("Updated pull request: [" + request.title + " - " + request.html_url + "]")
+					result = true;
+					this.processPullRequest();
+				}
 			}
 			return result;
+		}
+		processPullRequest() {
+			this.taskmaster.manage();
+		}
+		toJSON(): string {
+			return JSON.stringify({
+				"id": this.id,
+				"number": this.number,
+				"title": this.title,
+				"description": this.description,
+				"createdAt": this.createdAt,
+				"updatedAt": this.updatedAt,
+				"statusesUrl": this.statusesUrl,
+				"commitCount": this.commitCount,
+				"url": this.url,
+				"closed": this.closed,
+				"repositoryName": this.repositoryName
+			});
 		}
 		private readPullRequestData(pullRequest: Github.PullRequest) {
 			this.id = pullRequest.id;
@@ -54,10 +79,13 @@ module Print.Server {
 			this.url = pullRequest.html_url;
 			this.diffUrl = pullRequest.diff_url;
 		}
+<<<<<<< HEAD
 		processPullRequest() {
 			console.log("processing pull request");
 			var jsonResult = this.taskmaster.manage();
 			console.log(jsonResult)
 		}
+=======
+>>>>>>> b9140ebb06a517dd8b860d3aa89f3a1a316e5f72
 	}
 }

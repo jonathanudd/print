@@ -79,13 +79,5 @@ module Print.Server {
 			this.url = pullRequest.html_url;
 			this.diffUrl = pullRequest.diff_url;
 		}
-<<<<<<< HEAD
-		processPullRequest() {
-			console.log("processing pull request");
-			var jsonResult = this.taskmaster.manage();
-			console.log(jsonResult)
-		}
-=======
->>>>>>> b9140ebb06a517dd8b860d3aa89f3a1a316e5f72
 	}
 }

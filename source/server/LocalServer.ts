@@ -112,7 +112,7 @@ module Print.Server {
 										response.end(queue.toJSON());
 									} else {
 										response.writeHead(304, "Not Modified", { "ETag": etag, "Content-Type": "application/json" })
-										response.end(queue.toJSON());		
+										response.end();		
 									}
 								}
 							});

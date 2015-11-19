@@ -11,6 +11,7 @@ module Print.Server {
 		private description: string;
 		private createdAt: string;
 		private updatedAt: string;
+		private statusesUrl: string;
 		private commitCount: number;
 		private url: string;
 		private diffUrl: string;
@@ -53,20 +54,19 @@ module Print.Server {
 			this.taskmaster.manage();
 		}
 		toJSON(): string {
-			// TODO: Is there a better way?
-			var jsonObject: any = {};
-			jsonObject["id"] = this.id;
-			jsonObject["number"] = this.number;
-			jsonObject["title"] = this.title;
-			jsonObject["description"] = this.description;
-			jsonObject["createdAt"] = this.createdAt;
-			jsonObject["updatedAt"] = this.updatedAt;
-			jsonObject["commitCount"] = this.commitCount;
-			jsonObject["url"] = this.url;
-			jsonObject["diffUrl"] = this.diffUrl;
-			jsonObject["closed"] = this.closed;
-			jsonObject["repositoryName"] = this.repositoryName;
-			return JSON.stringify(jsonObject);
+			return JSON.stringify({
+				"id": this.id,
+				"number": this.number,
+				"title": this.title,
+				"description": this.description,
+				"createdAt": this.createdAt,
+				"updatedAt": this.updatedAt,
+				"statusesUrl": this.statusesUrl,
+				"commitCount": this.commitCount,
+				"url": this.url,
+				"closed": this.closed,
+				"repositoryName": this.repositoryName
+			});
 		}
 		private readPullRequestData(pullRequest: Github.PullRequest) {
 			this.id = pullRequest.id;

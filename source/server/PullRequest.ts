@@ -22,7 +22,8 @@ module Print.Server {
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
 			this.taskmaster = new Print.Childprocess.Taskmaster(this.number, user, repositoryName, organization, branch);
-			this.processPullRequest();
+			//var jsonResult = this.processPullRequest();
+
 		}
 		getId(): string { return this.id; }
 		getNumber(): number { return this.number; }
@@ -55,7 +56,8 @@ module Print.Server {
 		}
 		processPullRequest() {
 			console.log("processing pull request");
-			this.taskmaster.manage();
+			var jsonResult = this.taskmaster.manage();
+			console.log(jsonResult)
 		}
 	}
 }

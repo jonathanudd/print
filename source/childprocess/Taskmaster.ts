@@ -53,21 +53,15 @@ module Print.Childprocess {
 			// Clone, set upstream, fetch and merge primary repo
 			if (!fs.existsSync(this.pullRequestNumber + '/' + this.primaryRepository.name)){
 				//var ret = this.setup(this.primaryRepository, this.branch);
-				var ret = this.primaryRepository.clone(this.primaryRepository.name, this.branch);
-				gitResult.push(new ExecutionResult("clone",ret));
+				gitResult.push(new ExecutionResult("clone",this.primaryRepository.clone(this.primaryRepository.name, this.branch)));
 				this.primaryRepository.setUpstream(this.primaryRepository.name, this.primaryRepository.organization);
-				var ret3 = this.primaryRepository.fetch(this.primaryRepository.name);
-				gitResult.push(new ExecutionResult("fetch",ret));
-				var ret4 = this.primaryRepository.merge(this.primaryRepository.name);
-				gitResult.push(new ExecutionResult("merge",ret));
+				gitResult.push(new ExecutionResult("fetch",this.primaryRepository.fetch(this.primaryRepository.name)));
+				gitResult.push(new ExecutionResult("merge",this.primaryRepository.merge(this.primaryRepository.name)));
 			}
 			else {
-				var ret1 = this.primaryRepository.fetchFromOrigin(this.primaryRepository.name);
-				gitResult.push(new ExecutionResult("fetchOrigin",ret1));
-				var ret2 = this.primaryRepository.resetToOrigin(this.primaryRepository.name);
-				gitResult.push(new ExecutionResult("reset",ret2));
-				var ret3 = this.primaryRepository.merge(this.primaryRepository.name);
-				gitResult.push(new ExecutionResult("mergeOrigin",ret3));
+				gitResult.push(new ExecutionResult("fetchOrigin",this.primaryRepository.fetchFromOrigin(this.primaryRepository.name)));
+				gitResult.push(new ExecutionResult("reset",this.primaryRepository.resetToOrigin(this.primaryRepository.name)));
+				gitResult.push(new ExecutionResult("mergeOrigin",this.primaryRepository.merge(this.primaryRepository.name)));
 			}
 
 			// Read repository Configuration file in repo
@@ -83,9 +77,7 @@ module Print.Childprocess {
 
 			//  Perform actions
 			this.actions = repositoryConfiguration.actions;
-			var actionResult = this.executeActionList();
-			console.log(gitResult.concat(actionResult));
-			return actionResult;
+			return gitResult.concat(this.executeActionList());
 		}
 		createJSON(myClass : any) {
 		}

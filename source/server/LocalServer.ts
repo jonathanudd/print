@@ -39,6 +39,7 @@ module Print.Server {
 		private requestCallback(request: any, response: any) {
 			var url = urlparser.parse(request.url.toLowerCase(), true);
 			var name = url.href.substr(7, url.href.length - 7);
+			var header = JSON.parse(JSON.stringify(request.headers));
 			switch (<string>request.method) {
 				case "POST":
 					if (!this.pullRequestQueues.some(queue => { return queue.process(name, request, response); })) {
@@ -105,8 +106,14 @@ module Print.Server {
 							var repo = url.pathname.split("/")[2];
 							this.pullRequestQueues.forEach(queue => {
 								if (queue.getName() == repo) {
-									response.writeHead(200, "OK", { "Content-Type": "application/json" })
-									response.end(queue.toJSON());
+									var etag: string = header["ETag"];
+									if (etag != queue.getETag()) {
+										response.writeHead(200, "OK", { "ETag": queue.getETag(), "Content-Type": "application/json" })
+										response.end(queue.toJSON());
+									} else {
+										response.writeHead(304, "Not Modified", { "ETag": etag, "Content-Type": "application/json" })
+										response.end(queue.toJSON());		
+									}
 								}
 							});
 						}

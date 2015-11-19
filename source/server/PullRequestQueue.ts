@@ -9,6 +9,7 @@ var crypt = require("crypto");
 
 module Print.Server {
 	export class PullRequestQueue {
+		private etag: string = "";
 		private requests: PullRequest[] = [];
 		constructor(private name: string, private organization: string, private token: string) {
 			Github.Api.PullRequest.queryOpenPullRequests(organization, name, (requests: Server.PullRequest[]) => {
@@ -16,6 +17,7 @@ module Print.Server {
 			});
 		}
 		getName(): string { return this.name; }
+		getETag(): string { return this.etag; }
 		process(name: string, request: any, response: any): boolean {
 			var result: boolean;
 			var buffer: string = "";
@@ -25,15 +27,16 @@ module Print.Server {
 				});
 				request.on("end", () => {
 					var header = JSON.parse(JSON.stringify(request.headers));
-					var serverSignature: string = header["x-hub-signature"].toString()
+					var serverSignature: string = header["x-hub-signature"].toString();
 					if (this.verifySender(serverSignature, buffer, this.token)) {
 						var eventData = <Github.Events.PullRequestEvent>JSON.parse(buffer);
 						var pullRequest = this.find(eventData.pull_request.id);
+						this.etag = header["x-github-delivery"].toString();
 						if (pullRequest) {
-							// TODO: Check action to see if its closed
+							// TODO: Check action to see if its closed, what then?
 							pullRequest.tryUpdate(eventData.action, eventData.pull_request);
 						} else {
-							console.log("Added pull request: [" + pullRequest.getTitle() + " - " + pullRequest.getUrl() + "]");
+							console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
 							this.requests.push(new PullRequest(eventData.pull_request));
 						}
 						LocalServer.sendResponse(response, 200, "OK");

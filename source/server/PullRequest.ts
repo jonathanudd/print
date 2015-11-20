@@ -2,6 +2,8 @@
 /// <reference path="../configuration/ServerConfiguration" />
 /// <reference path="../github/events/PullRequestEvent" />
 /// <reference path="../childprocess/Taskmaster" />
+/// <reference path="../childprocess/ExecutionResult" />
+
 
 module Print.Server {
 	export class PullRequest {
@@ -17,7 +19,8 @@ module Print.Server {
 		private diffUrl: string;
 		private closed: boolean = false;
 		private repositoryName: string;
-		private taskmaster: Print.Childprocess.Taskmaster
+		private taskmaster: Print.Childprocess.Taskmaster;
+		private executionResults: Childprocess.ExecutionResult[] = [];
 		constructor(request: Github.PullRequest) {
 			this.readPullRequestData(request);
 			var user = request.user.login;
@@ -51,9 +54,21 @@ module Print.Server {
 			return result;
 		}
 		processPullRequest() {
-			this.taskmaster.manage();
+			this.executionResults = this.taskmaster.manage();
+			console.log(this.toJSON());
 		}
+/*		toJSON(): string {
+			var jsonObject: any[] = [];
+			this.requests.forEach(request => {
+				jsonObject.push(JSON.parse(request.toJSON()));
+			});
+			return JSON.stringify(jsonObject);
+		}*/
 		toJSON(): string {
+			var executionResultJSON: any[] = [];
+			this.executionResults.forEach(result => {
+				executionResultJSON.push(JSON.parse(result.toJSON()));
+			});
 			return JSON.stringify({
 				"id": this.id,
 				"number": this.number,
@@ -65,7 +80,8 @@ module Print.Server {
 				"commitCount": this.commitCount,
 				"url": this.url,
 				"closed": this.closed,
-				"repositoryName": this.repositoryName
+				"repositoryName": this.repositoryName,
+				"executionResult": executionResultJSON
 			});
 		}
 		private readPullRequestData(pullRequest: Github.PullRequest) {

@@ -106,13 +106,13 @@ module Print.Server {
 							var repo = url.pathname.split("/")[2];
 							this.pullRequestQueues.forEach(queue => {
 								if (queue.getName() == repo) {
-									var etag: string = header["ETag"];
+									var etag: string = header["etag"];
 									if (etag != queue.getETag()) {
-										response.writeHead(200, "OK", { "ETag": queue.getETag(), "Content-Type": "application/json" })
+										response.writeHead(200, "OK", { "etag": queue.getETag(), "Content-Type": "application/json" })
 										response.end(queue.toJSON());
 									} else {
-										response.writeHead(304, "Not Modified", { "ETag": etag, "Content-Type": "application/json" })
-										response.end();
+										response.writeHead(304, "Not Modified", { "etag": etag })
+										response.end();		
 									}
 								}
 							});

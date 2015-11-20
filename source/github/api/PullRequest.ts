@@ -9,7 +9,7 @@ module Print.Github.Api {
 		//
 		// TODO: Use Github api instead of hardcoded urls
 		//
-		static queryOpenPullRequests(organization: string, repository: string, onFinishedCallback: (result: Print.Server.PullRequest[]) => void) {
+		static queryOpenPullRequests(organization: string, repository: string, onFinishedCallback: (result: Print.Server.PullRequest[], etag: string) => void) {
 			var buffer: string = ""
 			var options = {
 				hostname: "api.github.com",
@@ -18,6 +18,8 @@ module Print.Github.Api {
 				headers: { "User-Agent": "print" }
 			};
 			https.request(options, (response: any) => {
+				var header = JSON.parse(JSON.stringify(response.headers));
+				var etag: string = header["etag"].toString();
 				response.on("data", (chunk: string) => {
 					buffer += chunk
 				});
@@ -29,7 +31,7 @@ module Print.Github.Api {
 					(<Github.PullRequest[]>JSON.parse(buffer)).forEach(request => {
 						result.push(new Server.PullRequest(request));
 					});
-					onFinishedCallback(result);
+					onFinishedCallback(result, etag);
 				});
 			}).end();
 		}

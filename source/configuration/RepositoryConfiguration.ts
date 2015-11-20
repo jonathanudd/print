@@ -5,7 +5,7 @@ module Print {
 		name: string;
 		secondary: string;
 		secondaryUpstream: string;
-		actions: Action[] = []
+		actions: Childprocess.Action[] = []
 		constructor() {
 		}
 	}

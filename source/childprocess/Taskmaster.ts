@@ -45,7 +45,6 @@ module Print.Childprocess {
 			return repositoryConfiguration;
 		}
 		manage(): ExecutionResult[] {
-			console.log('manage');
 			var gitResult: ExecutionResult[] = [];
 			// Create folder
 			if (!fs.existsSync(String(this.pullRequestNumber))) {
@@ -88,7 +87,7 @@ module Print.Childprocess {
 			for (var v in this.actions) {
 				var action = this.actions[v];
 				var result = this.executeAction(action);
-				executionResult.push(new Print.ExecutionResult(action.task, result));
+				executionResult.push(new Print.Childprocess.ExecutionResult(action.task, result));
 			}
 			return executionResult;
 		}

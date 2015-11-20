@@ -35,7 +35,12 @@ module Print.Server {
 						this.etag = header["x-github-delivery"].toString();
 						if (pullRequest) {
 							// TODO: Check action to see if its closed, what then?
-							pullRequest.tryUpdate(eventData.action, eventData.pull_request);
+							if (!pullRequest.tryUpdate(eventData.action, eventData.pull_request)) {
+								this.requests = this.requests.filter((element) => {
+									return element.getId() != eventData.pull_request.id;
+								});
+								console.log("Removed pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
+							}
 						} else {
 							console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
 							this.requests.push(new PullRequest(eventData.pull_request));

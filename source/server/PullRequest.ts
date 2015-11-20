@@ -17,7 +17,6 @@ module Print.Server {
 		private commitCount: number;
 		private url: string;
 		private diffUrl: string;
-		private closed: boolean = false;
 		private repositoryName: string;
 		private taskmaster: Print.Childprocess.Taskmaster;
 		private executionResults: Childprocess.ExecutionResult[] = [];
@@ -42,7 +41,6 @@ module Print.Server {
 			var result = false;
 			if (action == "closed") {
 				console.log("Closed pull request: [" + request.title + " - " + request.html_url + "]");
-				this.closed = true;
 			} else {
 				if (request.created_at != request.updated_at) {
 					this.readPullRequestData(request);
@@ -72,7 +70,6 @@ module Print.Server {
 				"statusesUrl": this.statusesUrl,
 				"commitCount": this.commitCount,
 				"url": this.url,
-				"closed": this.closed,
 				"repositoryName": this.repositoryName,
 				"executionResult": executionResultJSON
 			});

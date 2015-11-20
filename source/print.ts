@@ -1,8 +1,5 @@
 /// <reference path="../typings/node/node" />
 /// <reference path="server/LocalServer" />
-/// <reference path="childprocess/Taskmaster" />
-/// <reference path="ServerConfiguration" />
-/// <reference path="RepositoryConfiguration" />
 
 var fs = require("fs")
 

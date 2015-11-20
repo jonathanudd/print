@@ -14,34 +14,34 @@ module Print.Childprocess {
 			this.organization = organization;
 
 		}
-		clone(repo: string, branch: string) : string {
+		clone(repo: string, branch: string): string {
 			try {
-				execSync('cd ' + this.pullRequestNumber + ' && git clone -b '+ branch + ' --single-branch https://github.com/'+this.user+'/'+repo);
-		  		return 'OK';
-			}
-			catch (ex) {
-				return 'FAIL';
-			}
-		}
-		merge(repo: string ) : string {
-			try {
-				execSync('cd ' + this.pullRequestNumber + '/' + repo  + ' && git merge --no-edit upstream/master');
+				execSync('cd ' + this.pullRequestNumber + ' && git clone -b ' + branch + ' --single-branch https://github.com/' + this.user + '/' + repo);
 				return 'OK';
 			}
 			catch (ex) {
 				return 'FAIL';
 			}
 		}
-		setUpstream(repo: string, upstream: string) : string {
+		merge(repo: string): string {
 			try {
-				execSync('cd ' + this.pullRequestNumber + '/' + repo +  ' && git remote add upstream https://github.com/' + upstream + '/' + repo);
+				execSync('cd ' + this.pullRequestNumber + '/' + repo + ' && git merge --no-edit upstream/master');
 				return 'OK';
 			}
 			catch (ex) {
 				return 'FAIL';
 			}
 		}
-		fetch(repo: string) : string {
+		setUpstream(repo: string, upstream: string): string {
+			try {
+				execSync('cd ' + this.pullRequestNumber + '/' + repo + ' && git remote add upstream https://github.com/' + upstream + '/' + repo);
+				return 'OK';
+			}
+			catch (ex) {
+				return 'FAIL';
+			}
+		}
+		fetch(repo: string): string {
 			try {
 				execSync('cd ' + this.pullRequestNumber + '/' + repo + ' && git fetch upstream');
 				return 'OK';
@@ -50,7 +50,7 @@ module Print.Childprocess {
 				return 'FAIL';
 			}
 		}
-		resetToOrigin(repo: string) : string {
+		resetToOrigin(repo: string): string {
 			try {
 				execSync('cd ' + this.pullRequestNumber + '/' + repo + ' && git reset --hard origin/master');
 				return 'OK';
@@ -59,7 +59,7 @@ module Print.Childprocess {
 				return 'FAIL';
 			}
 		}
-		fetchFromOrigin(repo: string) : string {
+		fetchFromOrigin(repo: string): string {
 			try {
 				execSync('cd ' + this.pullRequestNumber + '/' + repo + ' && git fetch origin');
 				return 'OK';
@@ -68,18 +68,18 @@ module Print.Childprocess {
 				return 'FAIL';
 			}
 		}
-    /*all() {
-      execSync('git clone -b '+ this.branch + ' --single-branch https://github.com/'+this.user+'/'+this.repo +
-      '&& cd ' + this.pullRequestNumber + ' && git remote add upstream https://github.com/cogneco' + this.repo + '/' + this.repo +
-      ' && git merge --no-edit upstream/master' +
-      ' && git fetch upstream',
-      (error: any, stdout: any, stderr: any) => {
-        console.log('stdout: ' + stdout)
-        console.log('stderr: ' + stderr)
-        if (error !== null) {
-          console.log('exec error: ' + error)
-        }
-      })
-    }*/
+		/*all() {
+		  execSync('git clone -b '+ this.branch + ' --single-branch https://github.com/'+this.user+'/'+this.repo +
+		  '&& cd ' + this.pullRequestNumber + ' && git remote add upstream https://github.com/cogneco' + this.repo + '/' + this.repo +
+		  ' && git merge --no-edit upstream/master' +
+		  ' && git fetch upstream',
+		  (error: any, stdout: any, stderr: any) => {
+			console.log('stdout: ' + stdout)
+			console.log('stderr: ' + stderr)
+			if (error !== null) {
+			  console.log('exec error: ' + error)
+			}
+		  })
+		}*/
 	}
 }

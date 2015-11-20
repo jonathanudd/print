@@ -25,7 +25,6 @@
 		"source/server/PullRequest.ts",
 		"source/server/PullRequestQueue.ts",
 		"source/server/LocalServer.ts",
-		"source/ServerConfiguration.ts",
 		"source/print.ts",
 		"source/childprocess/Action.ts",
 		"source/childprocess/ExecutionResult.ts",

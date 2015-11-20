@@ -1,9 +1,10 @@
-/// <reference path="Action.ts" />
+/// <reference path="../childprocess/Action.ts" />
+
 module Print {
 	export class RepositoryConfiguration {
 		name: string;
 		secondary: string;
-		secondaryUpstream : string;
+		secondaryUpstream: string;
 		actions: Action[] = []
 		constructor() {
 		}

@@ -27,6 +27,8 @@
 		"source/server/LocalServer.ts",
 		"source/ServerConfiguration.ts",
 		"source/print.ts",
+		"source/childprocess/Action.ts",
+		"source/childprocess/ExecutionResult.ts",
 		"source/childprocess/Taskmaster.ts",
 		"source/childprocess/GitCommands.ts"
 	]

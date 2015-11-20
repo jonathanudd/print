@@ -56,7 +56,6 @@ module Print.Server {
 			return JSON.stringify(jsonObject);
 		}
 		private verifySender(serverSignature: string, payload: string, token: string): boolean {
-			// TODO: secure compare?
 			return "sha1=" + crypt.createHmac("sha1", token).update(payload).digest("hex") == serverSignature;
 		}
 		find(pullRequestId: string): PullRequest {

@@ -49,7 +49,9 @@ module Print.Server {
 				case "GET":
 					if (url.pathname == "/") {
 						if (url.search == "") {
-							response.writeHead(301, { Location: "https://github.com/login/oauth/authorize?scope=user:email&client_id=" + this.clientId });
+							response.writeHead(301, {
+								Location: "https://github.com/login/oauth/authorize?scope=user:email&client_id=" + this.clientId
+							});
 							response.end();
 						}
 						else if (url.query.code != "") {

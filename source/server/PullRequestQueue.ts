@@ -12,7 +12,8 @@ module Print.Server {
 		private etag: string = "";
 		private requests: PullRequest[] = [];
 		constructor(private name: string, private organization: string, private token: string) {
-			Github.Api.PullRequest.queryOpenPullRequests(organization, name, (requests: Server.PullRequest[]) => {
+			Github.Api.PullRequest.queryOpenPullRequests(organization, name, (requests: Server.PullRequest[], etag: string) => {
+				this.etag = etag;
 				this.requests = requests;
 			});
 		}

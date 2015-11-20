@@ -57,13 +57,6 @@ module Print.Server {
 			this.executionResults = this.taskmaster.manage();
 			console.log(this.toJSON());
 		}
-/*		toJSON(): string {
-			var jsonObject: any[] = [];
-			this.requests.forEach(request => {
-				jsonObject.push(JSON.parse(request.toJSON()));
-			});
-			return JSON.stringify(jsonObject);
-		}*/
 		toJSON(): string {
 			var executionResultJSON: any[] = [];
 			this.executionResults.forEach(result => {

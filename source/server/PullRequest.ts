@@ -71,7 +71,7 @@ module Print.Server {
 				"commitCount": this.commitCount,
 				"url": this.url,
 				"repositoryName": this.repositoryName,
-				"executionResult": executionResultJSON
+				"executionResults": executionResultJSON
 			});
 		}
 		private readPullRequestData(pullRequest: Github.PullRequest) {

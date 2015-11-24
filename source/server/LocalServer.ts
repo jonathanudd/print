@@ -1,6 +1,7 @@
 /// <reference path="../../typings/node/node.d.ts" />
 /// <reference path="../configuration/ServerConfiguration" />
 /// <reference path="PullRequestQueue" />
+/// <reference path="../github/AccessToken.ts" />
 
 var http = require("http");
 var urlparser = require("url");
@@ -15,6 +16,10 @@ module Print.Server {
 		private pullRequestQueues: PullRequestQueue[] = [];
 		private clientId: string = "";
 		private clientSecret: string = "";
+		private accessTokens: string[] = [];
+		private clientRoot: string = "print-client";
+		private printApiRoot: string = "print";
+		private githubScopes: string = "user:email";
 		constructor(configurationFile: string) {
 			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
 			this.configurations.forEach(configuration => {
@@ -47,56 +52,29 @@ module Print.Server {
 					}
 					break;
 				case "GET":
-					if (url.pathname == "/") {
-						if (url.search == "") {
-							response.writeHead(301, {
-								Location: "https://github.com/login/oauth/authorize?scope=user:email&client_id=" + this.clientId
-							});
-							response.end();
-						}
-						else if (url.query.code != "") {
-							var post_data = querystring.stringify({
-								"client_id": this.clientId,
-								"client_secret": this.clientSecret,
-								"code": url.query.code
-							});
-							var post_options = {
-								host: "github.com",
-								path: "/login/oauth/access_token",
-								method: "POST",
-								headers: {
-									"Content-Length": Buffer.byteLength(post_data),
-									"Accept": "application/json"
-								}
-							};
-							var post_request = https.request(post_options, (resp: any) => {
-								resp.on("data", (data: any) => {
-									//
-									// TODO: save access_token
-									//
-									response.writeHead(301, { Location: "/print-client" });
-									response.end();
-								});
-							});
-							post_request.write(post_data);
-							post_request.end();
-						}
+					var urlPathArray: string[] = url.pathname.split("/");
+					if (url.pathname == "/" + this.clientRoot + "/auth") {
+						this.fetchAccessToken(response, url);
 					}
-					else if (url.pathname.substr(0, 13) == "/print-client") {
-						var filename: string;
-						if (url.pathname == "/print-client")
-							filename = "print-client/index.html";
-						else
-							filename = url.pathname.substr(1);
-						var contentType = LocalServer.getContentType(filename);
-						LocalServer.sendFileResponse(filename, response, contentType);
+					else if (this.accessTokens.indexOf(request.headers.cookie) < 0) {
+						response.writeHead(301, { Location: "https://github.com/login/oauth/authorize?scope=" + this.githubScopes + "&client_id=" + this.clientId });
+						response.end();
 					}
-					else if (url.pathname.substr(0, 6) == "/print") {
-						if (url.pathname.split("/")[3] == "pr") {
-							var repo = url.pathname.split("/")[2];
+					else if (urlPathArray[1] == this.clientRoot) {
+							var filename: string;
+							if (url.pathname == "/" + this.clientRoot)
+								filename = "print-client/index.html";
+							else
+								filename = url.pathname.substr(1);
+							var contentType = LocalServer.getContentType(filename);
+							LocalServer.sendFileResponse(filename, response, contentType);
+					}
+					else if (urlPathArray[1] == this.printApiRoot) {
+						if (urlPathArray[3] == "pr") {
+							var repo = urlPathArray[2];
 							this.pullRequestQueues.forEach(queue => {
 								if (queue.getName() == repo) {
-									var pr = queue.find(url.pathname.split("/")[4]);
+									var pr = queue.find(urlPathArray[4]);
 									if (pr) {
 										response.writeHead(200, "OK", { "Content-Type": "application/json" })
 										response.end(pr.toJSON());
@@ -104,32 +82,32 @@ module Print.Server {
 								}
 							});
 						}
-						else if (url.pathname.split("/")[2]) {
-							var repo = url.pathname.split("/")[2];
+						else if (urlPathArray[2] == "repolist") {
+							var repos: string[] = [];
+							this.pullRequestQueues.forEach(queue => {
+								repos.push(queue.getName());
+							});
+							response.writeHead(200, "OK", { "Content-Type": "application/json" })
+							response.end(JSON.stringify(repos));
+						}
+						else if (urlPathArray[2]) {
+							var repo = urlPathArray[2];
 							this.pullRequestQueues.forEach(queue => {
 								if (queue.getName() == repo) {
 									var etag: string = header["etag"];
 									if (etag != queue.getETag()) {
 										response.writeHead(200, "OK", { "etag": queue.getETag(), "Content-Type": "application/json" })
 										response.end(queue.toJSON());
-									} else {
+									} 
+									else {
 										response.writeHead(304, "Not Modified", { "etag": etag })
-										response.end();		
+										response.end();
 									}
 								}
 							});
 						}
-						else {
-							if (this.pullRequestQueues.length > 0) {
-								var repos: string[] = [];
-								this.pullRequestQueues.forEach(queue => {
-									repos.push(queue.getName());
-								});
-								response.writeHead(200, "OK", { "Content-Type": "application/json" })
-								response.end(JSON.stringify(repos));
-							}
-						}
-						LocalServer.sendResponse(response, 400, "Bad request");
+						else
+							LocalServer.sendResponse(response, 400, "Bad request");
 					}
 					else
 						LocalServer.sendResponse(response, 400, "Bad request");
@@ -176,6 +154,36 @@ module Print.Server {
 					break;
 			};
 			return contenttype;
+		}
+		private fetchAccessToken(response: any, url: any) {
+			var post_data = querystring.stringify({
+				"client_id": this.clientId,
+				"client_secret": this.clientSecret,
+				"code": url.query.code
+			});
+			var post_options = {
+				host: "github.com",
+				path: "/login/oauth/access_token",
+				method: "POST",
+				headers: {
+					"Content-Length": Buffer.byteLength(post_data),
+					"Accept": "application/json"
+				}
+			};
+			var post_request = https.request(post_options, (resp: any) => {
+				var buffer: string = "";
+				resp.on("data", (data: any) => {
+					buffer += data;
+				});
+				resp.on("end", () => {
+					var accessToken = <Github.AccessToken>JSON.parse(buffer);
+					this.accessTokens.push(accessToken.access_token);
+					response.writeHead(301, { "Location": "/" + this.clientRoot, "Set-Cookie": accessToken.access_token + "; path=/"});
+					response.end();
+				});
+			});
+			post_request.write(post_data);
+			post_request.end();
 		}
 	}
 }

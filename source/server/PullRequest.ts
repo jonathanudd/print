@@ -3,7 +3,8 @@
 /// <reference path="../github/events/PullRequestEvent" />
 /// <reference path="../childprocess/Taskmaster" />
 /// <reference path="../childprocess/ExecutionResult" />
-
+/// <reference path="User" />
+/// <reference path="Fork" />
 
 module Print.Server {
 	export class PullRequest {
@@ -19,6 +20,9 @@ module Print.Server {
 		private url: string;
 		private diffUrl: string;
 		private repositoryName: string;
+		private user: User;
+		private head: Fork;
+		private base: Fork;
 		private taskmaster: Print.Childprocess.Taskmaster;
 		private executionResults: Childprocess.ExecutionResult[] = [];
 		constructor(request: Github.PullRequest) {
@@ -73,7 +77,10 @@ module Print.Server {
 				"commitCount": this.commitCount,
 				"url": this.url,
 				"repositoryName": this.repositoryName,
-				"executionResults": executionResultJSON
+				"executionResults": executionResultJSON,
+				"user": JSON.parse(this.user.toJSON()),
+				"head": JSON.parse(this.head.toJSON()),
+				"base": JSON.parse(this.base.toJSON())
 			});
 		}
 		private readPullRequestData(pullRequest: Github.PullRequest) {
@@ -87,6 +94,9 @@ module Print.Server {
 			this.commitCount = pullRequest.commits;
 			this.url = pullRequest.html_url;
 			this.diffUrl = pullRequest.diff_url;
+			this.user = new User(pullRequest.user);
+			this.head = new Fork(pullRequest.head);
+			this.base = new Fork(pullRequest.base);
 		}
 	}
 }

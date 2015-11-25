@@ -25,11 +25,11 @@ module Print.Server {
 			this.printApiRoot = "print";
 			this.clientRoot = "print/print-client";
 			this.githubScopes = "user:email";
-			this.baseUrl = "http://192.168.1.175:48085";
 			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
 			this.configurations.forEach(configuration => {
 				this.clientId = configuration.clientId;
 				this.clientSecret = configuration.clientSecret;
+				this.baseUrl = configuration.baseUrl;
 				this.pullRequestQueues.push(new PullRequestQueue(configuration.name, configuration.organization, configuration.secret));
 			});
 			this.server = http.createServer((request: any, response: any) => {

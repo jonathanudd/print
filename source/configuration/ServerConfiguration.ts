@@ -9,6 +9,7 @@ module Print {
 		secret: string;
 		clientId: string;
 		clientSecret: string;
+		baseUrl: string;
 		static readConfigurationFile(file: string): ServerConfiguration[] {
 			var result: ServerConfiguration[] = []
 			try {

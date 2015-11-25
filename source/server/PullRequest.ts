@@ -59,7 +59,6 @@ module Print.Server {
 		}
 		processPullRequest() {
 			this.executionResults = this.taskmaster.manage();
-			console.log(this.toJSON());
 		}
 		toJSON(): string {
 			var executionResultJSON: any[] = [];

@@ -4,7 +4,7 @@ module Print.Server {
 	export class User {
 		private username: string
 		constructor(user: Github.User) {
-			this.username = user.login;			
+			this.username = user.login;
 		}
 		getUsername(): string { return this.username; }
 		toJSON(): string {

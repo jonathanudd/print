@@ -19,7 +19,7 @@ module Print.Github.Api {
 			};
 			https.request(options, (response: any) => {
 				var header = JSON.parse(JSON.stringify(response.headers));
-				var etag: string = header["etag"].toString();
+				var etag: string = header["etag"];
 				response.on("data", (chunk: string) => {
 					buffer += chunk
 				});

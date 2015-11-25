@@ -17,11 +17,15 @@ module Print.Server {
 		private clientId: string = "";
 		private clientSecret: string = "";
 		private accessTokens: string[] = [];
-		private clientRoot: string = "print-client";
-		private printApiRoot: string = "print";
-		private githubScopes: string = "user:email";
-		private authUrl: string = "http://127.0.0.1:48085/" + this.clientRoot + "/auth"
+		private clientRoot: string = "";
+		private printApiRoot: string = "";
+		private githubScopes: string = "";
+		private baseUrl: string = "";
 		constructor(configurationFile: string) {
+			this.printApiRoot = "print";
+			this.clientRoot = "print/print-client";
+			this.githubScopes = "user:email";
+			this.baseUrl = "http://127.0.0.1:48085";
 			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
 			this.configurations.forEach(configuration => {
 				this.clientId = configuration.clientId;
@@ -58,19 +62,23 @@ module Print.Server {
 						console.log("Github ERROR: [" + url.query.error + "] Description: [" + url.query.error_description + "] Uri: [" + url.query.error_uri + "]");
 						LocalServer.sendResponse(response, 400, "Github error. See error message in server log");
 					}
-					else if (url.pathname == "/" + this.clientRoot + "/auth") {
+					else if (url.query.authorized == "no") {
 						this.fetchAccessToken(response, url);
 					}
 					else if (this.accessTokens.indexOf(request.headers.cookie) < 0) {
-						response.writeHead(301, { Location: "https://github.com/login/oauth/authorize?scope=" + this.githubScopes + "&client_id=" + this.clientId + "&redirect_uri=" + this.authUrl});
+						if (url.pathname == "/")
+							var redirectUrl = this.baseUrl + "/" + this.clientRoot
+						else
+							var redirectUrl = this.baseUrl + url.pathname
+						response.writeHead(301, { Location: "https://github.com/login/oauth/authorize?scope=" + this.githubScopes + "&client_id=" + this.clientId + "&redirect_uri=" + redirectUrl + "?authorized=no" });
 						response.end();
 					}
-					else if (urlPathArray[1] == this.clientRoot) {
+					else if (urlPathArray[1] + "/" + urlPathArray[2] == this.clientRoot) {
 							var filename: string;
 							if (url.pathname == "/" + this.clientRoot)
 								filename = "print-client/index.html";
 							else
-								filename = url.pathname.substr(1);
+								filename = url.pathname.substr(7);
 							var contentType = LocalServer.getContentType(filename);
 							LocalServer.sendFileResponse(filename, response, contentType);
 					}
@@ -111,8 +119,7 @@ module Print.Server {
 								}
 							});
 						}
-						else
-							LocalServer.sendResponse(response, 400, "Bad request");
+						LocalServer.sendResponse(response, 400, "Bad request");
 					}
 					else
 						LocalServer.sendResponse(response, 400, "Bad request");
@@ -188,7 +195,7 @@ module Print.Server {
 					}
 					else {
 						this.accessTokens.push(accessToken.access_token);
-						response.writeHead(301, { "Location": "/" + this.clientRoot, "Set-Cookie": accessToken.access_token + "; path=/"});
+						response.writeHead(301, { "Location": url.pathname, "Set-Cookie": accessToken.access_token + "; path=/"});
 						response.end();
 					}
 				});

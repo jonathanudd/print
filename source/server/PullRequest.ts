@@ -7,6 +7,7 @@
 
 module Print.Server {
 	export class PullRequest {
+		private etag: string;
 		private id: string;
 		private number: number;
 		private title: string;
@@ -28,6 +29,7 @@ module Print.Server {
 			this.repositoryName = request.head.repo.name;
 			this.taskmaster = new Print.Childprocess.Taskmaster(this.number, user, this.repositoryName, organization, branch);
 		}
+		getEtag(): string { return this.etag }
 		getId(): string { return this.id; }
 		getNumber(): number { return this.number; }
 		getTitle(): string { return this.title; }
@@ -75,6 +77,7 @@ module Print.Server {
 			});
 		}
 		private readPullRequestData(pullRequest: Github.PullRequest) {
+			this.etag = pullRequest.updated_at;
 			this.id = pullRequest.id;
 			this.number = pullRequest.number;
 			this.title = pullRequest.title;

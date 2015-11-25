@@ -89,8 +89,15 @@ module Print.Server {
 								if (queue.getName() == repo) {
 									var pr = queue.find(urlPathArray[4]);
 									if (pr) {
-										response.writeHead(200, "OK", { "Content-Type": "application/json" })
-										response.end(pr.toJSON());
+										var etag: string = header["etag"];
+										if (etag != pr.getEtag()) {
+											response.writeHead(200, "OK", { "etag": pr.getEtag(), "Content-Type": "application/json" })
+											response.end(pr.toJSON());
+										}
+										else {
+											response.writeHead(304, "Not Modified", { "etag": etag })
+											response.end();
+										}
 									}
 								}
 							});

@@ -25,11 +25,11 @@ module Print.Server {
 			this.printApiRoot = "print";
 			this.clientRoot = "print/print-client";
 			this.githubScopes = "user:email";
-			this.baseUrl = "http://127.0.0.1:48085";
 			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
 			this.configurations.forEach(configuration => {
 				this.clientId = configuration.clientId;
 				this.clientSecret = configuration.clientSecret;
+				this.baseUrl = configuration.baseUrl;
 				this.pullRequestQueues.push(new PullRequestQueue(configuration.name, configuration.organization, configuration.secret));
 			});
 			this.server = http.createServer((request: any, response: any) => {
@@ -57,7 +57,7 @@ module Print.Server {
 					}
 					break;
 				case "GET":
-					var urlPathArray: string[] = url.pathname.split("/");
+					var urlPathList: string[] = url.pathname.split("/");
 					if (url.query.error) {
 						console.log("Github ERROR: [" + url.query.error + "] Description: [" + url.query.error_description + "] Uri: [" + url.query.error_uri + "]");
 						LocalServer.sendResponse(response, 400, "Github error. See error message in server log");
@@ -65,7 +65,7 @@ module Print.Server {
 					else if (url.query.authorized == "no") {
 						this.fetchAccessToken(response, url);
 					}
-					else if (this.accessTokens.indexOf(request.headers.cookie) < 0) {
+					else if (this.accessTokens.indexOf(LocalServer.getCookieValue(request.headers.cookie, "authorized")) < 0) {
 						if (url.pathname == "/")
 							var redirectUrl = this.baseUrl + "/" + this.clientRoot
 						else
@@ -73,7 +73,7 @@ module Print.Server {
 						response.writeHead(301, { Location: "https://github.com/login/oauth/authorize?scope=" + this.githubScopes + "&client_id=" + this.clientId + "&redirect_uri=" + redirectUrl + "?authorized=no" });
 						response.end();
 					}
-					else if (urlPathArray[1] + "/" + urlPathArray[2] == this.clientRoot) {
+					else if (urlPathList[1] + "/" + urlPathList[2] == this.clientRoot) {
 							var filename: string;
 							if (url.pathname == "/" + this.clientRoot)
 								filename = "print-client/index.html";
@@ -82,12 +82,12 @@ module Print.Server {
 							var contentType = LocalServer.getContentType(filename);
 							LocalServer.sendFileResponse(filename, response, contentType);
 					}
-					else if (urlPathArray[1] == this.printApiRoot) {
-						if (urlPathArray[3] == "pr") {
-							var repo = urlPathArray[2];
+					else if (urlPathList[1] == this.printApiRoot) {
+						if (urlPathList[3] == "pr") {
+							var repo = urlPathList[2];
 							this.pullRequestQueues.forEach(queue => {
 								if (queue.getName() == repo) {
-									var pr = queue.find(urlPathArray[4]);
+									var pr = queue.find(urlPathList[4]);
 									if (pr) {
 										var etag: string = header["etag"];
 										if (etag != pr.getEtag()) {
@@ -102,7 +102,7 @@ module Print.Server {
 								}
 							});
 						}
-						else if (urlPathArray[2] == "repolist") {
+						else if (urlPathList[2] == "repolist") {
 							var repos: string[] = [];
 							this.pullRequestQueues.forEach(queue => {
 								repos.push(queue.getName());
@@ -110,8 +110,8 @@ module Print.Server {
 							response.writeHead(200, "OK", { "Content-Type": "application/json" })
 							response.end(JSON.stringify(repos));
 						}
-						else if (urlPathArray[2]) {
-							var repo = urlPathArray[2];
+						else if (urlPathList[2]) {
+							var repo = urlPathList[2];
 							this.pullRequestQueues.forEach(queue => {
 								if (queue.getName() == repo) {
 									var etag: string = header["etag"];
@@ -202,7 +202,7 @@ module Print.Server {
 					}
 					else {
 						this.accessTokens.push(accessToken.access_token);
-						response.writeHead(301, { "Location": url.pathname, "Set-Cookie": accessToken.access_token + "; path=/"});
+						response.writeHead(301, { "Location": url.pathname, "Set-Cookie": "authorized=" + accessToken.access_token + "; path=/"});
 						response.end();
 					}
 				});
@@ -210,5 +210,19 @@ module Print.Server {
 			post_request.write(post_data);
 			post_request.end();
 		}
+		static getCookieValue(cookies: string, name: string) {
+			if (cookies) {
+				var cookieList = cookies.replace(/ /g, "").split(";");
+				for (var i = 0; i < cookies.length; i++) {
+					if (cookieList[i]) {		
+						var cookie = cookieList[i].split("=")
+						if(name == cookie[0]) {
+							return cookie[1];
+						}
+					}
+				}
+			}
+			return "";
+	};
 	}
 }

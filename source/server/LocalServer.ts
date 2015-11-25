@@ -20,6 +20,7 @@ module Print.Server {
 		private clientRoot: string = "print-client";
 		private printApiRoot: string = "print";
 		private githubScopes: string = "user:email";
+		private authUrl: string = "http://127.0.0.1:48085/" + this.clientRoot + "/auth"
 		constructor(configurationFile: string) {
 			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
 			this.configurations.forEach(configuration => {
@@ -53,11 +54,15 @@ module Print.Server {
 					break;
 				case "GET":
 					var urlPathArray: string[] = url.pathname.split("/");
-					if (url.pathname == "/" + this.clientRoot + "/auth") {
+					if (url.query.error) {
+						console.log("Github ERROR: [" + url.query.error + "] Description: [" + url.query.error_description + "] Uri: [" + url.query.error_uri + "]");
+						LocalServer.sendResponse(response, 400, "Github error. See error message in server log");
+					}
+					else if (url.pathname == "/" + this.clientRoot + "/auth") {
 						this.fetchAccessToken(response, url);
 					}
 					else if (this.accessTokens.indexOf(request.headers.cookie) < 0) {
-						response.writeHead(301, { Location: "https://github.com/login/oauth/authorize?scope=" + this.githubScopes + "&client_id=" + this.clientId });
+						response.writeHead(301, { Location: "https://github.com/login/oauth/authorize?scope=" + this.githubScopes + "&client_id=" + this.clientId + "&redirect_uri=" + this.authUrl});
 						response.end();
 					}
 					else if (urlPathArray[1] == this.clientRoot) {
@@ -177,9 +182,15 @@ module Print.Server {
 				});
 				resp.on("end", () => {
 					var accessToken = <Github.AccessToken>JSON.parse(buffer);
-					this.accessTokens.push(accessToken.access_token);
-					response.writeHead(301, { "Location": "/" + this.clientRoot, "Set-Cookie": accessToken.access_token + "; path=/"});
-					response.end();
+					if (accessToken.error) {
+						console.log("Github ERROR: [" + accessToken.error + "] Description: [" + accessToken.error_description + "] Uri: [" + accessToken.error_uri + "]");
+						LocalServer.sendResponse(response, 400, "Github error. See error message in server log");
+					}
+					else {
+						this.accessTokens.push(accessToken.access_token);
+						response.writeHead(301, { "Location": "/" + this.clientRoot, "Set-Cookie": accessToken.access_token + "; path=/"});
+						response.end();
+					}
 				});
 			});
 			post_request.write(post_data);

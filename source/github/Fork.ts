@@ -6,7 +6,7 @@ module Print.Github {
 		label: string;
 		ref: string;
 		sha: string;
-		user: User
-		repo: Repository
+		user: User;
+		repo: Repository;
 	}
 }

@@ -24,12 +24,12 @@ module Print.Server {
 		constructor(configurationFile: string) {
 			this.printApiRoot = "print";
 			this.clientRoot = "print/print-client";
-			this.githubScopes = "user:email";
+			this.githubScopes = "repo,public_repo";
 			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
 			this.configurations.forEach(configuration => {
 				this.clientId = configuration.clientId;
 				this.clientSecret = configuration.clientSecret;
-				this.baseUrl = configuration.baseUrl;
+				this.baseUrl = configuration.baseUrl + ":" + this.port.toString();
 				this.pullRequestQueues.push(new PullRequestQueue(configuration.name, configuration.organization, configuration.secret));
 			});
 			this.server = http.createServer((request: any, response: any) => {
@@ -58,6 +58,7 @@ module Print.Server {
 					break;
 				case "GET":
 					var urlPathList: string[] = url.pathname.split("/");
+					var authCookie: string = LocalServer.getCookieValue(request.headers.cookie, "authorized")
 					if (url.query.error) {
 						console.log("Github ERROR: [" + url.query.error + "] Description: [" + url.query.error_description + "] Uri: [" + url.query.error_uri + "]");
 						LocalServer.sendResponse(response, 400, "Github error. See error message in server log");
@@ -65,7 +66,7 @@ module Print.Server {
 					else if (url.query.authorized == "no") {
 						this.fetchAccessToken(response, url);
 					}
-					else if (this.accessTokens.indexOf(LocalServer.getCookieValue(request.headers.cookie, "authorized")) < 0) {
+					else if (this.accessTokens.indexOf(authCookie) < 0) {
 						if (url.pathname == "/")
 							var redirectUrl = this.baseUrl + "/" + this.clientRoot
 						else
@@ -87,18 +88,31 @@ module Print.Server {
 							var repo = urlPathList[2];
 							this.pullRequestQueues.forEach(queue => {
 								if (queue.getName() == repo) {
-									var pr = queue.find(urlPathList[4]);
-									if (pr) {
-										var etag: string = header["etag"];
-										if (etag != pr.getEtag()) {
-											response.writeHead(200, "OK", { "etag": pr.getEtag(), "Content-Type": "application/json" })
-											response.end(pr.toJSON());
+									var options = {
+										hostname: "api.github.com",
+										path: "/repos/" + queue.getOrganization() + "/" + repo,
+										headers: { "User-Agent": "print", "Authorization" : "token " + authCookie }
+									};
+									https.get(options, (authResponse: any) => {
+										if (authResponse.statusCode == 200) {
+											var pr = queue.find(urlPathList[4]);
+											if (pr) {
+												var etag: string = header["etag"];
+												if (etag != pr.getEtag()) {
+													response.writeHead(200, "OK", { "etag": pr.getEtag(), "Content-Type": "application/json" })
+													response.end(pr.toJSON());
+												}
+												else {
+													response.writeHead(304, "Not Modified", { "etag": etag })
+													response.end();
+												}
+											}
 										}
 										else {
-											response.writeHead(304, "Not Modified", { "etag": etag })
-											response.end();
+											response.writeHead(400, "Bad request", { "Content-Type": "application/json" });
+											response.end('{ "error": "You are not authorized to view this repository" }');
 										}
-									}
+									});
 								}
 							});
 						}
@@ -114,19 +128,34 @@ module Print.Server {
 							var repo = urlPathList[2];
 							this.pullRequestQueues.forEach(queue => {
 								if (queue.getName() == repo) {
-									var etag: string = header["etag"];
-									if (etag != queue.getETag()) {
-										response.writeHead(200, "OK", { "etag": queue.getETag(), "Content-Type": "application/json" })
-										response.end(queue.toJSON());
-									} 
-									else {
-										response.writeHead(304, "Not Modified", { "etag": etag })
-										response.end();
-									}
+									var options = {
+										hostname: "api.github.com",
+										/*path: "/repos/" + queue.getOrganization() + "/" + repo,*/
+										path: "/repos/vidhance/ooc-vidproc",
+										headers: { "User-Agent": "print", "Authorization" : "token " + authCookie }
+									};
+									https.get(options, (authResponse: any) => {
+										if (authResponse.statusCode == 200) {
+											var etag: string = header["etag"];
+											if (etag != queue.getETag()) {
+												response.writeHead(200, "OK", { "etag": queue.getETag(), "Content-Type": "application/json" })
+												response.end(queue.toJSON());
+											} 
+											else {
+												response.writeHead(304, "Not Modified", { "etag": etag })
+												response.end();
+											}
+										}
+										else {
+											response.writeHead(400, "Bad request", { "Content-Type": "application/json" });
+											response.end('{ "error": "You are not authorized to view this repository" }');
+										}
+									});
 								}
 							});
 						}
-						LocalServer.sendResponse(response, 400, "Bad request");
+						else
+							LocalServer.sendResponse(response, 400, "Bad request");
 					}
 					else
 						LocalServer.sendResponse(response, 400, "Bad request");
@@ -223,6 +252,6 @@ module Print.Server {
 				}
 			}
 			return "";
-	};
+		}
 	}
 }

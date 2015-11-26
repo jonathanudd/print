@@ -19,6 +19,7 @@ module Print.Server {
 		}
 		getName(): string { return this.name; }
 		getETag(): string { return this.etag; }
+		getOrganization(): string { return this.organization; }
 		process(name: string, request: any, response: any): boolean {
 			var result: boolean;
 			var buffer: string = "";

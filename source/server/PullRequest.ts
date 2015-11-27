@@ -43,6 +43,7 @@ module Print.Server {
 		getUrl(): string { return this.url; }
 		getDiffUrl(): string { return this.diffUrl; }
 		getRepositoryName(): string { return this.repositoryName; }
+		getUser(): User { return this.user; }
 		tryUpdate(action: string, request: Github.PullRequest): boolean {
 			var result = false;
 			if (action == "closed") {

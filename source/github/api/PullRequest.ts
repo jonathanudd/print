@@ -9,13 +9,13 @@ module Print.Github.Api {
 		//
 		// TODO: Use Github api instead of hardcoded urls
 		//
-		static queryOpenPullRequests(organization: string, repository: string, onFinishedCallback: (result: Print.Server.PullRequest[], etag: string) => void) {
+		static queryOpenPullRequests(organization: string, repository: string, token: string, onFinishedCallback: (result: Print.Server.PullRequest[], etag: string) => void) {
 			var buffer: string = ""
 			var options = {
 				hostname: "api.github.com",
 				path: "/repos/" + organization + "/" + repository + "/pulls?state=open",
 				method: "GET",
-				headers: { "User-Agent": "print" }
+				headers: { "User-Agent": "print", "Authorization": "token " + token }
 			};
 			https.request(options, (response: any) => {
 				var header = JSON.parse(JSON.stringify(response.headers));
@@ -32,6 +32,55 @@ module Print.Github.Api {
 						result.push(new Server.PullRequest(request));
 					});
 					onFinishedCallback(result, etag);
+				});
+			}).end();
+		}
+		static getTeamMembers(teamID: string,token: string, onFinishedCallback: (result: Print.Github.User[]) => void) {
+			var buffer: string = "";
+			var options = {
+				hostname: "api.github.com",
+				path: "/teams/" + teamID + "/members",
+				method: "GET",
+				headers: { "User-Agent": "print", "Authorization": "token " + token }
+			};
+			https.request(options, (response: any) => {
+				var header = JSON.parse(JSON.stringify(response.headers));
+				var etag: string = header["etag"];
+				response.on("data", (chunk: string) => {
+					buffer += chunk
+				});
+				response.on("error", (error: any) => {
+					console.log("ERROR:", error.toString());
+				});
+				response.on("end", () => {
+					var userList = <Github.User[]>JSON.parse(buffer);
+					onFinishedCallback(userList);
+				});
+			}).end();
+		}
+		static getTeamID(organization: string, teamName: string,token: string, onFinishedCallback: (teamID: string) => void) {
+			var buffer: string = "";
+			var options = {
+				hostname: "api.github.com",
+				path: "/orgs/" + organization + "/teams",
+				method: "GET",
+				headers: { "User-Agent": "print","Authorization": "token " + token},
+			};
+			https.request(options, (response: any) => {
+				var header = JSON.parse(JSON.stringify(response.headers));
+				var etag: string = header["etag"];
+				response.on("data", (chunk: string) => {
+					buffer += chunk
+				});
+				response.on("error", (error: any) => {
+					console.log("ERROR:", error.toString());
+				});
+				response.on("end", () => {
+					var teamList = <Github.Team[]>JSON.parse(buffer);
+					teamList = teamList.filter((team) => {
+						return team.name == teamName;
+					});
+					onFinishedCallback(teamList[0].id);
 				});
 			}).end();
 		}

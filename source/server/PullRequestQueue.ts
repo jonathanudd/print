@@ -83,10 +83,7 @@ module Print.Server {
 				if(user.login == requestUsername) {
 					result = true;
 				}
-				else {
-					result = false;
-				}
-			})
+			});
 			return result;
 		}
 		find(pullRequestId: string): PullRequest {

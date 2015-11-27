@@ -11,10 +11,20 @@ module Print.Server {
 	export class PullRequestQueue {
 		private etag: string = "";
 		private requests: PullRequest[] = [];
-		constructor(private name: string, private organization: string, private token: string) {
-			Github.Api.PullRequest.queryOpenPullRequests(organization, name, (requests: Server.PullRequest[], etag: string) => {
-				this.etag = etag;
-				this.requests = requests;
+		private members: Github.User[];
+		private teamID: string;
+		constructor(private name: string, private organization: string, private secret: string, token: string, private parentOrganization: string, teamName: string) {
+			Github.Api.PullRequest.getTeamID(parentOrganization, teamName, token, (teamID: string) => {
+				this.teamID = teamID;
+				Github.Api.PullRequest.getTeamMembers(this.teamID, token, (members: Github.User[]) => {
+					this.members = members;
+					Github.Api.PullRequest.queryOpenPullRequests(organization, name, (requests: Server.PullRequest[], etag: string) => {
+						this.etag = etag;
+						this.requests = requests.filter((request) => {
+							return this.verifyTeamMember(request.getUser().getUsername(), this.parentOrganization)
+						});
+					});
+				});
 			});
 		}
 		getName(): string { return this.name; }
@@ -30,7 +40,7 @@ module Print.Server {
 				request.on("end", () => {
 					var header = JSON.parse(JSON.stringify(request.headers));
 					var serverSignature: string = header["x-hub-signature"].toString();
-					if (this.verifySender(serverSignature, buffer, this.token)) {
+					if (this.verifySender(serverSignature, buffer, this.secret)) {
 						var eventData = <Github.Events.PullRequestEvent>JSON.parse(buffer);
 						var pullRequest = this.find(eventData.pull_request.id);
 						this.etag = header["x-github-delivery"].toString();
@@ -43,8 +53,10 @@ module Print.Server {
 								console.log("Removed pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
 							}
 						} else {
-							console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
-							this.requests.push(new PullRequest(eventData.pull_request));
+							if(this.verifyTeamMember(eventData.pull_request.user.login, this.parentOrganization)) {
+								console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
+								this.requests.push(new PullRequest(eventData.pull_request));
+							}
 						}
 						LocalServer.sendResponse(response, 200, "OK");
 					} else {
@@ -64,6 +76,18 @@ module Print.Server {
 		}
 		private verifySender(serverSignature: string, payload: string, token: string): boolean {
 			return "sha1=" + crypt.createHmac("sha1", token).update(payload).digest("hex") == serverSignature;
+		}
+		private verifyTeamMember(requestUsername: string, team: string) : boolean {
+			var result = false;
+			this.members.forEach(user => {
+				if(user.login == requestUsername) {
+					result = true;
+				}
+				else {
+					result = false;
+				}
+			})
+			return result;
 		}
 		find(pullRequestId: string): PullRequest {
 			var result: PullRequest;

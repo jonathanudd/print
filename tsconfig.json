@@ -20,6 +20,7 @@
 		"source/github/Fork",
 		"source/github/PullRequest.ts",
 		"source/github/Repository.ts",
+		"source/github/Team.ts",
 		"source/github/User.ts",
 		"source/server/Fork.ts",
 		"source/server/Repository.ts",

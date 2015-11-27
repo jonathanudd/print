@@ -30,7 +30,7 @@ module Print.Server {
 				this.clientId = configuration.clientId;
 				this.clientSecret = configuration.clientSecret;
 				this.baseUrl = configuration.baseUrl + ":" + this.port.toString();
-				this.pullRequestQueues.push(new PullRequestQueue(configuration.name, configuration.organization, configuration.secret));
+				this.pullRequestQueues.push(new PullRequestQueue(configuration.name, configuration.organization, configuration.secret, configuration.authorizationToken, configuration.authorizationOrganization, configuration.authorizationTeam));
 			});
 			this.server = http.createServer((request: any, response: any) => {
 				this.requestCallback(request, response)
@@ -130,8 +130,7 @@ module Print.Server {
 								if (queue.getName() == repo) {
 									var options = {
 										hostname: "api.github.com",
-										/*path: "/repos/" + queue.getOrganization() + "/" + repo,*/
-										path: "/repos/vidhance/ooc-vidproc",
+										path: "/repos/" + queue.getOrganization() + "/" + repo,
 										headers: { "User-Agent": "print", "Authorization" : "token " + authCookie }
 									};
 									https.get(options, (authResponse: any) => {
@@ -243,7 +242,7 @@ module Print.Server {
 			if (cookies) {
 				var cookieList = cookies.replace(/ /g, "").split(";");
 				for (var i = 0; i < cookies.length; i++) {
-					if (cookieList[i]) {		
+					if (cookieList[i]) {
 						var cookie = cookieList[i].split("=")
 						if(name == cookie[0]) {
 							return cookie[1];

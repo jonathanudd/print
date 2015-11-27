@@ -50,9 +50,9 @@ module Print.Childprocess {
 				return 'FAIL';
 			}
 		}
-		resetToOrigin(repo: string): string {
+		resetToOrigin(repo: string, branch: string): string {
 			try {
-				execSync('cd ' + this.pullRequestNumber + '/' + repo + ' && git reset --hard origin/master');
+				execSync('cd ' + this.pullRequestNumber + '/' + repo + ' && git reset --hard origin/' + branch);
 				return 'OK';
 			}
 			catch (ex) {

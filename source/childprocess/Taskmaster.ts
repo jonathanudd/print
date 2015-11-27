@@ -61,12 +61,12 @@ module Print.Childprocess {
 			}
 			else {
 				gitResult.push(new ExecutionResult("fetchOrigin", this.primaryRepository.fetchFromOrigin(this.primaryRepository.name)));
-				gitResult.push(new ExecutionResult("reset", this.primaryRepository.resetToOrigin(this.primaryRepository.name)));
+				gitResult.push(new ExecutionResult("reset", this.primaryRepository.resetToOrigin(this.primaryRepository.name, this.branch)));
 				gitResult.push(new ExecutionResult("mergeOrigin", this.primaryRepository.merge(this.primaryRepository.name)));
 			}
 
 			// Read repository Configuration file in repo
-			var repositoryConfiguration: RepositoryConfiguration = this.readRepositoryConfiguration(this.primaryRepository.name);
+			var repositoryConfiguration: RepositoryConfiguration = this.readRepositoryConfigurationTMP(this.primaryRepository.name);
 
 			// Clone secondary repository
 			if (!(repositoryConfiguration.secondary == 'none')) {

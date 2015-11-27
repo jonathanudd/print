@@ -18,7 +18,7 @@ module Print.Server {
 				this.teamID = teamID;
 				Github.Api.PullRequest.getTeamMembers(this.teamID, token, (members: Github.User[]) => {
 					this.members = members;
-					Github.Api.PullRequest.queryOpenPullRequests(organization, name, (requests: Server.PullRequest[], etag: string) => {
+					Github.Api.PullRequest.queryOpenPullRequests(organization, name, token, (requests: Server.PullRequest[], etag: string) => {
 						this.etag = etag;
 						this.requests = requests.filter((request) => {
 							return this.verifyTeamMember(request.getUser().getUsername(), this.parentOrganization)

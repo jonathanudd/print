@@ -9,13 +9,13 @@ module Print.Github.Api {
 		//
 		// TODO: Use Github api instead of hardcoded urls
 		//
-		static queryOpenPullRequests(organization: string, repository: string, onFinishedCallback: (result: Print.Server.PullRequest[], etag: string) => void) {
+		static queryOpenPullRequests(organization: string, repository: string, token: string, onFinishedCallback: (result: Print.Server.PullRequest[], etag: string) => void) {
 			var buffer: string = ""
 			var options = {
 				hostname: "api.github.com",
 				path: "/repos/" + organization + "/" + repository + "/pulls?state=open",
 				method: "GET",
-				headers: { "User-Agent": "print" }
+				headers: { "User-Agent": "print", "Authorization": "token " + token }
 			};
 			https.request(options, (response: any) => {
 				var header = JSON.parse(JSON.stringify(response.headers));
@@ -41,7 +41,7 @@ module Print.Github.Api {
 				hostname: "api.github.com",
 				path: "/teams/" + teamID + "/members",
 				method: "GET",
-				headers: { "User-Agent": "print","Authorization": "token " + token},
+				headers: { "User-Agent": "print", "Authorization": "token " + token }
 			};
 			https.request(options, (response: any) => {
 				var header = JSON.parse(JSON.stringify(response.headers));

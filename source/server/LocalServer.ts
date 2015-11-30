@@ -21,7 +21,7 @@ module Print.Server {
 		private printApiRoot: string = "";
 		private githubScopes: string = "";
 		private baseUrl: string = "";
-		constructor(configurationFile: string) {
+		constructor(configurationFile: string, buildFolder: string) {
 			this.printApiRoot = "print";
 			this.clientRoot = "print/print-client";
 			this.githubScopes = "repo,public_repo";
@@ -30,7 +30,9 @@ module Print.Server {
 				this.clientId = configuration.clientId;
 				this.clientSecret = configuration.clientSecret;
 				this.baseUrl = configuration.baseUrl + ":" + this.port.toString();
-				this.pullRequestQueues.push(new PullRequestQueue(configuration.name, configuration.organization, configuration.secret, configuration.authorizationToken, configuration.authorizationOrganization, configuration.authorizationTeam));
+				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, configuration.name, configuration.organization, 
+					configuration.secret, configuration.authorizationToken, configuration.authorizationOrganization, 
+					configuration.authorizationTeam));
 			});
 			this.server = http.createServer((request: any, response: any) => {
 				this.requestCallback(request, response)

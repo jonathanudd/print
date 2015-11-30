@@ -25,13 +25,13 @@ module Print.Server {
 		private base: Fork;
 		private taskmaster: Print.Childprocess.Taskmaster;
 		private executionResults: Childprocess.ExecutionResult[] = [];
-		constructor(request: Github.PullRequest) {
+		constructor(request: Github.PullRequest, token: string, path: string) {
 			this.readPullRequestData(request);
 			var user = request.user.login;
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
 			this.repositoryName = request.head.repo.name;
-			this.taskmaster = new Print.Childprocess.Taskmaster(this.number, user, this.repositoryName, organization, branch);
+			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch);
 		}
 		getEtag(): string { return this.etag }
 		getId(): string { return this.id; }

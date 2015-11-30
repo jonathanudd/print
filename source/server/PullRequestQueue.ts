@@ -9,16 +9,19 @@ var crypt = require("crypto");
 
 module Print.Server {
 	export class PullRequestQueue {
+		private path: string;
 		private etag: string = "";
 		private requests: PullRequest[] = [];
 		private members: Github.User[];
 		private teamID: string;
-		constructor(private name: string, private organization: string, private secret: string, token: string, private parentOrganization: string, teamName: string) {
+		constructor(path: string, private name: string, private organization: string, private secret: string, private token: string, private parentOrganization: string, teamName: string) {
+			this.path = path + "/" + this.name;
+			this.createQueueFolder(this.path);
 			Github.Api.PullRequest.getTeamID(parentOrganization, teamName, token, (teamID: string) => {
 				this.teamID = teamID;
 				Github.Api.PullRequest.getTeamMembers(this.teamID, token, (members: Github.User[]) => {
 					this.members = members;
-					Github.Api.PullRequest.queryOpenPullRequests(organization, name, token, (requests: Server.PullRequest[], etag: string) => {
+					Github.Api.PullRequest.queryOpenPullRequests(this.path, organization, name, token, (requests: Server.PullRequest[], etag: string) => {
 						this.etag = etag;
 						this.requests = requests.filter((request) => {
 							return this.verifyTeamMember(request.getUser().getUsername(), this.parentOrganization)
@@ -55,7 +58,7 @@ module Print.Server {
 						} else {
 							if(this.verifyTeamMember(eventData.pull_request.user.login, this.parentOrganization)) {
 								console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
-								this.requests.push(new PullRequest(eventData.pull_request));
+								this.requests.push(new PullRequest(eventData.pull_request, this.token, this.path));
 							}
 						}
 						LocalServer.sendResponse(response, 200, "OK");
@@ -96,6 +99,16 @@ module Print.Server {
 				return false;
 			});
 			return result;
+		}
+		createQueueFolder(queueFolder: string) {
+			try {
+				if (!fs.existsSync(String(queueFolder))) {
+					fs.mkdirSync(String(queueFolder));
+				}
+			}
+			catch (ex) {
+				console.log(ex);
+			}
 		}
 	}
 }

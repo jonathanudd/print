@@ -6,9 +6,10 @@ var fs = require("fs")
 module Print {
 	export class Program {
 		private server: Server.LocalServer
-		constructor() {
+		constructor(buildFolder: string) {
 			this.registerKeyEvents();
-			this.server = new Server.LocalServer("config.json");
+			this.createBuildFolder(buildFolder);
+			this.server = new Server.LocalServer("config.json", buildFolder);
 			this.server.start();
 		}
 		registerKeyEvents() {
@@ -18,6 +19,18 @@ module Print {
 				process.exit();
 			})
 		}
+		createBuildFolder(buildFolder: string) {
+			try {
+				if (!fs.existsSync(String(buildFolder))) {
+					fs.mkdirSync(String(buildFolder));
+				}
+			}
+			catch (ex) {
+				console.log(ex);
+			}
+		}
 	}
+	
 }
-var program = new Print.Program()
+var path =  process.env['HOME'] + "/repositories";
+var program = new Print.Program(path);

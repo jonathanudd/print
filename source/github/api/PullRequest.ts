@@ -29,7 +29,9 @@ module Print.Github.Api {
 				response.on("end", () => {
 					var result: Server.PullRequest[] = [];
 					(<Github.PullRequest[]>JSON.parse(buffer)).forEach(request => {
-						result.push(new Server.PullRequest(request));
+						var pr = new Server.PullRequest(request);
+						pr.processPullRequest();
+						result.push(pr);
 					});
 					onFinishedCallback(result, etag);
 				});

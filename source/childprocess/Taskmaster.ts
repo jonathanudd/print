@@ -93,7 +93,7 @@ module Print.Childprocess {
 		}
 		executeAction(action: Action): string {
 			var command = action.task;
-			var args: string[] = [];
+			var args = action.args.split(",");
 			if (action.dependency != 'none') {
 				args.push(__dirname + '/../video/' + action.dependency);
 			}

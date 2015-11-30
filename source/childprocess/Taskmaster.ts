@@ -58,7 +58,7 @@ module Print.Childprocess {
 
 			// Clone secondary repository
 			if (!(repositoryConfiguration.secondary == 'none')) {
-				if (!fs.existsSync(this.pullRequestNumber + '/' + repositoryConfiguration.secondary)) {
+				if (!fs.existsSync(this.folderPath + '/' + repositoryConfiguration.secondary)) {
 					this.secondaryRepository = new Childprocess.GitCommands(this.token, this.pullRequestNumber, this.folderPath, this.user, repositoryConfiguration.secondary, repositoryConfiguration.name);
 					var secondClone = this.secondaryRepository.clone(this.secondaryRepository.name, this.branch);
 					if(secondClone == '-1') {
@@ -66,8 +66,8 @@ module Print.Childprocess {
 						this.secondaryBranch = "master";
 					}
 					else {
-						gitResult.push(new ExecutionResult("clone secondary","OK"));
-						this.secondaryBranch = this.branch
+						gitResult.push(new ExecutionResult("clone secondary","0"));
+						this.secondaryBranch = this.branch;
 					}
 				}
 				else {
@@ -98,7 +98,7 @@ module Print.Childprocess {
 		}
 	executeAction(action: Action): string {
 			var command = action.task;
-			var args: string[] = [];
+			var args = action.args.split(",");
 			if (action.dependency != 'none') {
 				args.push(process.env['HOME'] + '/Video/' + action.dependency);
 			}

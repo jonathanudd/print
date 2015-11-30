@@ -4,7 +4,7 @@
 /// <reference path="ExecutionResult" />
 /// <reference path="GitCommands" />
 
-var execSync = require('child_process').execSync
+var child_process = require('child_process')
 var fs = require("fs")
 
 module Print.Childprocess {
@@ -61,8 +61,8 @@ module Print.Childprocess {
 				if (!fs.existsSync(this.pullRequestNumber + '/' + repositoryConfiguration.secondary)) {
 					this.secondaryRepository = new Childprocess.GitCommands(this.token, this.pullRequestNumber, this.folderPath, this.user, repositoryConfiguration.secondary, repositoryConfiguration.name);
 					var secondClone = this.secondaryRepository.clone(this.secondaryRepository.name, this.branch);
-					if(secondClone == 'FAIL') {
-						gitResult.push(new ExecutionResult("clone secondary", this.secondaryRepository.cloneFromUser("cogneco", this.secondaryRepository.name,"master" )));
+					if(secondClone == '-1') {
+						gitResult.push(new ExecutionResult("clone secondary", this.secondaryRepository.cloneFromUser(repositoryConfiguration.secondaryUpstream, this.secondaryRepository.name,"master" )));
 						this.secondaryBranch = "master";
 					}
 					else {
@@ -75,7 +75,7 @@ module Print.Childprocess {
 						this.secondaryRepository.pull(this.user,this.secondaryRepository.name, this.secondaryBranch);
 					}
 					else {
-						this.secondaryRepository.pull("cogneco",this.secondaryRepository.name, this.secondaryBranch)
+						this.secondaryRepository.pull(repositoryConfiguration.secondaryUpstream,this.secondaryRepository.name, this.secondaryBranch)
 					}
 				}
 			}
@@ -87,8 +87,6 @@ module Print.Childprocess {
 			return tmp;
 
 		}
-		createJSON(myClass: any) {
-		}
 		executeActionList(): ExecutionResult[] {
 			var executionResult: ExecutionResult[] = [];
 			for (var v in this.actions) {
@@ -98,20 +96,16 @@ module Print.Childprocess {
 			}
 			return executionResult;
 		}
-		executeAction(action: Action): string {
-			var command = 'cd ' + this.pullRequestNumber + '/' + this.primaryRepository.name + ' && ';
-			if (action.dependency == 'none') {
-				command = command + action.task;
-			}
-			else {
-				//command = command + action.task + ' ' + __dirname + '/../video/' + action.dependency;
-				command = command + action.task + ' ' + process.env['HOME'] + '/Video/' + action.dependency;
+	executeAction(action: Action): string {
+			var command = action.task;
+			var args: string[] = [];
+			if (action.dependency != 'none') {
+				args.push(process.env['HOME'] + '/Video/' + action.dependency);
 			}
 			try {
-				var outputValue = execSync(command);
-				var outputArray = String(outputValue).split('\n');
-				var returnValue = outputArray[outputArray.length - 2]
-				return returnValue;
+				var path = this.folderPath + "/" + this.primaryRepository.name;
+				var child = child_process.spawnSync(action.task, args, { cwd: path });
+				return child.status;
 			}
 			catch (ex) {
 				return 'fail'

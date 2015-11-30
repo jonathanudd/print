@@ -3,15 +3,15 @@ var execSync = require('child_process').execSync
 var child_process = require('child_process')
 module Print.Childprocess {
 	export class GitCommands {
-		private t0en: string;
+		private token: string;
 		private pullRequestNumber: number
 		private path : string;
 		private user: string
 		name: string;
 		secret: string;
 		organization: string;
-		constructor(t0en: string, pullRequestNumber: number, path: string, user: string, name: string, organization: string) {
-			this.t0en = t0en;
+		constructor(token: string, pullRequestNumber: number, path: string, user: string, name: string, organization: string) {
+			this.token = token;
 			this.pullRequestNumber = pullRequestNumber;
 			this.path = path;
 			this.user = user;
@@ -22,7 +22,7 @@ module Print.Childprocess {
 		clone(repo: string, branch: string): string {
 			console.log(this.path);
 			try {
-				execSync('cd ' + this.path + ' && git clone -b ' + branch + ' --single-branch https://' + this.t0en + '@github.com/' + this.user + '/' + repo);
+				execSync('cd ' + this.path + ' && git clone -b ' + branch + ' --single-branch https://' + this.token + '@github.com/' + this.user + '/' + repo);
 				return '0';
 			}
 			catch (ex) {
@@ -31,7 +31,7 @@ module Print.Childprocess {
 		}
 		cloneFromUser(user: string, repo: string, branch: string): string {
 			try {
-				execSync('cd ' + this.path + ' && git clone -b ' + branch + ' --single-branch https://' + this.t0en + '@github.com/' + user + '/' + repo);
+				execSync('cd ' + this.path + ' && git clone -b ' + branch + ' --single-branch https://' + this.token + '@github.com/' + user + '/' + repo);
 				return '0';
 			}
 			catch (ex) {
@@ -67,7 +67,7 @@ module Print.Childprocess {
 			}
 		}
 		pull(owner: string,repo: string, branch: string): string {
-			var url = 'https://' + this.t0en + '@github.com/' + owner + '/' + repo;
+			var url = 'https://' + this.token + '@github.com/' + owner + '/' + repo;
 			try {
 				execSync('cd ' + this.path + '/' + repo + ' && git pull ' + url + ' ' + branch);
 				return '0';
@@ -77,7 +77,7 @@ module Print.Childprocess {
 			}			
 		}
 		resetToOrigin(repo: string, branch: string): string {
-			var url = 'https://' + this.t0en + '@github.com/' + this.user + '/' + repo;
+			var url = 'https://' + this.token + '@github.com/' + this.user + '/' + repo;
 			try {
 				execSync('cd ' + this.path + '/' + repo + ' && git fetch ' + url + ' && git reset --hard origin/' + branch);
 				return '0';

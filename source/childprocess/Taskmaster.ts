@@ -4,7 +4,7 @@
 /// <reference path="ExecutionResult" />
 /// <reference path="GitCommands" />
 
-var execSync = require('child_process').execSync
+var child_process = require('child_process')
 var fs = require("fs")
 
 module Print.Childprocess {
@@ -92,18 +92,15 @@ module Print.Childprocess {
 			return executionResult;
 		}
 		executeAction(action: Action): string {
-			var command = 'cd ' + this.pullRequestNumber + '/' + this.primaryRepository.name + ' && ';
-			if (action.dependency == 'none') {
-				command = command + action.task;
-			}
-			else {
-				command = command + action.task + ' ' + __dirname + '/../video/' + action.dependency;
+			var command = action.task;
+			var args: string[] = [];
+			if (action.dependency != 'none') {
+				args.push(__dirname + '/../video/' + action.dependency);
 			}
 			try {
-				var outputValue = execSync(command);
-				var outputArray = String(outputValue).split('\n');
-				var returnValue = outputArray[outputArray.length - 2]
-				return returnValue;
+				var path = this.pullRequestNumber + "/" + this.primaryRepository.name;
+				var child = child_process.spawnSync(action.task, args, { cwd: path });
+				return child.status;
 			}
 			catch (ex) {
 				return 'fail'

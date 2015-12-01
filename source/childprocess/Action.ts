@@ -3,5 +3,6 @@ module Print.Childprocess {
 		task: string;
 		dependency: string;
 		args: string;
+		path: string;
 	}
 }

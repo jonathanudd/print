@@ -82,10 +82,9 @@ module Print.Childprocess {
 
 			//  Perform actions
 			this.actions = repositoryConfiguration.actions;
-			var tmp = gitResult.concat(this.executeActionList());
-			console.log(tmp);
-			return tmp;
-
+			return gitResult.concat(this.executeActionList());
+		}
+		createJSON(myClass: any) {
 		}
 		executeActionList(): ExecutionResult[] {
 			var executionResult: ExecutionResult[] = [];
@@ -98,7 +97,10 @@ module Print.Childprocess {
 		}
 	executeAction(action: Action): string {
 			var command = action.task;
-			var args = action.args.split(",");
+			var args: string[] = [];
+			if (action.args) {
+				var args = action.args.split(",");
+			}
 			if (action.dependency != 'none') {
 				args.push(process.env['HOME'] + '/Video/' + action.dependency);
 			}

@@ -2,11 +2,11 @@
 /// <reference path="Repository" />
 
 module Print.Github {
-	export class Head {
+	export class Fork {
 		label: string;
 		ref: string;
 		sha: string;
-		user: User
-		repo: Repository
+		user: User;
+		repo: Repository;
 	}
 }

@@ -1,0 +1,8 @@
+{
+	"name" : "ooc-kean",
+	"secondary" : "none",
+	"secondaryUpstream" : "none",
+	"actions" : [
+			{"task" : "./test.sh", "dependency" : "none"}
+	]
+}

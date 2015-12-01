@@ -1,9 +1,10 @@
 /// <reference path="User" />
+/// <reference path="Fork" />
 
 module Print.Github {
 	export class PullRequest {
-		id: string;
 		url: string;
+		id: string;
 		html_url: string;
 		diff_url: string;
 		number: number;
@@ -13,6 +14,9 @@ module Print.Github {
 		body: string;
 		created_at: string;
 		updated_at: string;
+		statuses_url: string;
+		head: Fork;
+		base: Fork;
 		merged: boolean;
 		commits: number;
 		additions: number;

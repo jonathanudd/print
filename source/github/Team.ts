@@ -1,6 +1,6 @@
 module Print.Github {
-	export class Owner {
+	export class Team {
 		name: string;
-		email: string;
+		id: string;
 	}
 }

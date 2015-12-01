@@ -5,7 +5,7 @@
 		"noImplicitAny": true,
 		"removeComments": true,
 		"preserveConstEnums": true,
-		"out": "build/print.js",
+		"outFile": "build/print.js",
 		"sourceMap": true,
 		"sourceRoot": "../source"
 	},
@@ -17,14 +17,21 @@
 		"source/github/events/PushEvent.ts",
 		"source/github/Author.ts",
 		"source/github/Commit.ts",
-		"source/github/Head.ts",
-		"source/github/Owner.ts",
+		"source/github/Fork",
 		"source/github/PullRequest.ts",
 		"source/github/Repository.ts",
+		"source/github/Team.ts",
 		"source/github/User.ts",
+		"source/server/Fork.ts",
+		"source/server/Repository.ts",
+		"source/server/User.ts",
 		"source/server/PullRequest.ts",
 		"source/server/PullRequestQueue.ts",
 		"source/server/LocalServer.ts",
-		"source/print.ts"
+		"source/print.ts",
+		"source/childprocess/Action.ts",
+		"source/childprocess/ExecutionResult.ts",
+		"source/childprocess/Taskmaster.ts",
+		"source/childprocess/GitCommands.ts"
 	]
 }

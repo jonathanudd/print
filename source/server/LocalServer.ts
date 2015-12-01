@@ -23,7 +23,7 @@ module Print.Server {
 		private githubScopes: string = "repo,public_repo";
 		private baseUrl: string = "";
 		private cookieSecret: string = "Oz3Evair";
-		constructor(configurationFile: string) {
+		constructor(configurationFile: string, buildFolder: string) {
 			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
 			this.configurations.forEach(configuration => {
 				this.clientId = configuration.clientId;

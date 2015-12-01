@@ -76,6 +76,15 @@ module Print.Childprocess {
 				return '-1';
 			}			
 		}
+		resetToFirstHead(repo: string): string {
+			try {
+				execSync('cd ' + this.path + '/' + repo + ' && git reset --hard HEAD~0' );
+				return '0';
+			}
+			catch (ex) {
+				return '-1';
+			}
+		}
 		resetToOrigin(repo: string, branch: string): string {
 			var url = 'https://' + this.token + '@github.com/' + this.user + '/' + repo;
 			try {

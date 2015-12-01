@@ -46,8 +46,13 @@ module Print.Childprocess {
 			// Clone, set upstream, fetch and merge primary repo
 			if (!fs.existsSync(this.folderPath + '/' + this.primaryRepository.name)) {
 				gitResult.push(new ExecutionResult("clone", this.primaryRepository.clone(this.primaryRepository.name, this.branch)));
-				gitResult.push(new ExecutionResult("pull upstream", this.primaryRepository.pull(this.organization, this.primaryRepository.name, "master")));
-			}
+				var pullResult = this.primaryRepository.pull(this.organization, this.primaryRepository.name, "master");
+				if(pullResult == '-1') {
+					this.primaryRepository.resetToFirstHead(this.primaryRepository.name);
+				}
+				gitResult.push(new ExecutionResult("pull upstream", pullResult));
+				//gitResult.push(new ExecutionResult("pull upstream", this.primaryRepository.pull(this.organization, this.primaryRepository.name, "master")));
+		}
 			else {
 				gitResult.push(new ExecutionResult("pull origin", this.primaryRepository.pull(this.user, this.primaryRepository.name, this.branch)));
 				gitResult.push(new ExecutionResult("pull upstream", this.primaryRepository.pull(this.organization, this.primaryRepository.name, "master")));
@@ -62,6 +67,8 @@ module Print.Childprocess {
 					this.secondaryRepository = new Childprocess.GitCommands(this.token, this.pullRequestNumber, this.folderPath, this.user, repositoryConfiguration.secondary, repositoryConfiguration.name);
 					var secondClone = this.secondaryRepository.clone(this.secondaryRepository.name, this.branch);
 					if(secondClone == '-1') {
+						console.log(repositoryConfiguration.secondaryUpstream);
+						console.log(this.secondaryRepository.name);
 						gitResult.push(new ExecutionResult("clone secondary", this.secondaryRepository.cloneFromUser(repositoryConfiguration.secondaryUpstream, this.secondaryRepository.name,"master" )));
 						this.secondaryBranch = "master";
 					}

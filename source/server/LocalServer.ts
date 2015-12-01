@@ -7,6 +7,7 @@ var http = require("http");
 var urlparser = require("url");
 var querystring = require("querystring");
 var fs = require("fs");
+var crypt = require("crypto"); 
 
 module Print.Server {
 	export class LocalServer {
@@ -17,14 +18,12 @@ module Print.Server {
 		private clientId: string = "";
 		private clientSecret: string = "";
 		private accessTokens: string[] = [];
-		private clientRoot: string = "";
-		private printApiRoot: string = "";
-		private githubScopes: string = "";
+		private printApiRoot: string = "print";
+		private clientRoot: string = "print/print-client";
+		private githubScopes: string = "repo,public_repo";
 		private baseUrl: string = "";
+		private cookieSecret: string = "Oz3Evair";
 		constructor(configurationFile: string) {
-			this.printApiRoot = "print";
-			this.clientRoot = "print/print-client";
-			this.githubScopes = "repo,public_repo";
 			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
 			this.configurations.forEach(configuration => {
 				this.clientId = configuration.clientId;
@@ -58,7 +57,8 @@ module Print.Server {
 					break;
 				case "GET":
 					var urlPathList: string[] = url.pathname.split("/");
-					var authCookie: string = LocalServer.getCookieValue(request.headers.cookie, "authorized")
+					var cookieValue: string = LocalServer.getCookieValue(request.headers.cookie, "authorized");
+					var accessToken: string = this.findAccessToken(LocalServer.getCookieValue(request.headers.cookie, "authorized"));
 					if (url.query.error) {
 						console.log("Github ERROR: [" + url.query.error + "] Description: [" + url.query.error_description + "] Uri: [" + url.query.error_uri + "]");
 						LocalServer.sendResponse(response, 400, "Github error. See error message in server log");
@@ -66,7 +66,7 @@ module Print.Server {
 					else if (url.query.authorized == "no") {
 						this.fetchAccessToken(response, url);
 					}
-					else if (this.accessTokens.indexOf(authCookie) < 0) {
+					else if (!accessToken) {
 						if (url.pathname == "/")
 							var redirectUrl = this.baseUrl + "/" + this.clientRoot
 						else
@@ -91,7 +91,7 @@ module Print.Server {
 									var options = {
 										hostname: "api.github.com",
 										path: "/repos/" + queue.getOrganization() + "/" + repo,
-										headers: { "User-Agent": "print", "Authorization" : "token " + authCookie }
+										headers: { "User-Agent": "print", "Authorization" : "token " + accessToken }
 									};
 									https.get(options, (authResponse: any) => {
 										if (authResponse.statusCode == 200) {
@@ -131,7 +131,7 @@ module Print.Server {
 									var options = {
 										hostname: "api.github.com",
 										path: "/repos/" + queue.getOrganization() + "/" + repo,
-										headers: { "User-Agent": "print", "Authorization" : "token " + authCookie }
+										headers: { "User-Agent": "print", "Authorization" : "token " + accessToken }
 									};
 									https.get(options, (authResponse: any) => {
 										if (authResponse.statusCode == 200) {
@@ -230,7 +230,8 @@ module Print.Server {
 					}
 					else {
 						this.accessTokens.push(accessToken.access_token);
-						response.writeHead(301, { "Location": url.pathname, "Set-Cookie": "authorized=" + accessToken.access_token + "; path=/"});
+						var hash = crypt.createHmac("sha1", this.cookieSecret).update(accessToken.access_token).digest("hex");
+						response.writeHead(301, { "Location": url.pathname, "Set-Cookie": "authorized=" + hash + "; path=/" });
 						response.end();
 					}
 				});
@@ -248,6 +249,14 @@ module Print.Server {
 							return cookie[1];
 						}
 					}
+				}
+			}
+			return "";
+		}
+		findAccessToken(cookieValue: string) {
+			for (var i = 0; i < this.accessTokens.length; i++) {
+				if (cookieValue == crypt.createHmac("sha1", this.cookieSecret).update(this.accessTokens[i]).digest("hex")) {
+					return this.accessTokens[i];
 				}
 			}
 			return "";

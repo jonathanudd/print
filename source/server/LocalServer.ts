@@ -7,7 +7,8 @@ var http = require("http");
 var urlparser = require("url");
 var querystring = require("querystring");
 var fs = require("fs");
-var crypt = require("crypto"); 
+var crypt = require("crypto");
+var child_process = require("child_process");
 
 module Print.Server {
 	export class LocalServer {
@@ -77,13 +78,22 @@ module Print.Server {
 						response.end();
 					}
 					else if (urlPathList[1] + "/" + urlPathList[2] == this.clientRoot) {
-							var filename: string;
-							if (url.pathname == "/" + this.clientRoot)
-								filename = "print-client/index.html";
-							else
-								filename = url.pathname.substr(7);
-							var contentType = LocalServer.getContentType(filename);
-							LocalServer.sendFileResponse(filename, response, contentType);
+							if (urlPathList[3] == "am-i-localhost") {
+								response.writeHead(200, "OK", { "Content-Type": "application/json" });
+								var isLocalhost = "no";
+								if (this.baseUrl.indexOf(request.socket.remoteAddress.substr(7)) > 0)
+									isLocalhost = "yes";
+								response.end('{ "localhost" : "' + isLocalhost + '" }');
+							}
+							else {
+								var filename: string;
+								if (url.pathname == "/" + this.clientRoot)
+									filename = "print-client/index.html";
+								else
+									filename = url.pathname.substr(7);
+								var contentType = LocalServer.getContentType(filename);
+								LocalServer.sendFileResponse(filename, response, contentType);
+							}
 					}
 					else if (urlPathList[1] == this.printApiRoot) {
 						if (urlPathList[3] == "pr") {
@@ -123,8 +133,22 @@ module Print.Server {
 							this.pullRequestQueues.forEach(queue => {
 								repos.push(queue.getName());
 							});
-							response.writeHead(200, "OK", { "Content-Type": "application/json" })
+							response.writeHead(200, "OK", { "Content-Type": "application/json" });
 							response.end(JSON.stringify(repos));
+						}
+						else if (urlPathList[2] == "explore") {
+							var pr: any;
+							this.pullRequestQueues.forEach(queue => {
+								if (queue.getName() == urlPathList[4]) {
+									pr = queue.find(urlPathList[5]);
+								}
+							});
+							var path = process.env['HOME'] + "/repositories/" + urlPathList[4] + "/" + pr.getNumber();
+							if (urlPathList[3] == "terminal")
+								child_process.spawn("gnome-terminal", [], { cwd: path });
+							else if(urlPathList[3] == "nautilus")
+								child_process.spawn("nautilus", ["--browser", path]);
+							LocalServer.sendResponse(response, 200, "OK");
 						}
 						else if (urlPathList[2]) {
 							var repo = urlPathList[2];

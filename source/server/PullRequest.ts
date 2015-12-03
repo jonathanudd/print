@@ -62,7 +62,6 @@ module Print.Server {
 		processPullRequest() {
 			this.executionResults = this.taskmaster.manage();	
 			var status = this. extractStatus(this.executionResults);
-			console.log("status url = " + this.statusesUrl);
 			if(status) {
 				Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
 			}

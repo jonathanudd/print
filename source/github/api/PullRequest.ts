@@ -107,15 +107,7 @@ module Print.Github.Api {
 					"Authorization": "token " + token
 				}
 			};
-			var post_request = https.request(post_options, (resp: any) => {
-				resp.on("data", (data: any) => {
-					console.log('Response: ');
-					//console.log('Response: ' + data);
-				});
-				resp.on("end", () => {
-					console.log("end");
-				});
-			});
+			var post_request = https.request(post_options);
 			post_request.write(post_data);
 			post_request.end();
   

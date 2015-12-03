@@ -60,16 +60,17 @@ module Print.Server {
 			return result;
 		}
 		processPullRequest() {
-			this.executionResults = this.taskmaster.manage();	
-			var status = this.extractStatus(this.executionResults);
-			if(status) {
-				Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
-			}
-			else {
-				Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
-				
-			}
-			
+			this.taskmaster.manage(this.number.toString(), (executionResults: Childprocess.ExecutionResult[]) => {
+				this.executionResults = executionResults;
+				var status = this.extractStatus(this.executionResults);
+				if(status) {
+					Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
+				}
+				else {
+					Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
+					
+				}
+			});			
 		}
 		extractStatus(results: Childprocess.ExecutionResult[]): boolean {
 			var status: boolean = true;

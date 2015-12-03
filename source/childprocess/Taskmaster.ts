@@ -122,7 +122,7 @@ module Print.Childprocess {
 			try {
 				path = this.folderPath + "/" + this.primaryRepository.name + "/" + path;
 				//var path = this.folderPath + "/" + this.primaryRepository.name;
-				var child = child_process.spawnSync(action.task, args, { cwd: path });
+				var child = child_process.spawnSync(action.task, args, { cwd: path, timeout:  180000});
 				return child.status;
 			}
 			catch (ex) {

@@ -61,7 +61,7 @@ module Print.Server {
 		}
 		processPullRequest() {
 			this.executionResults = this.taskmaster.manage();	
-			var status = this. extractStatus(this.executionResults);
+			var status = this.extractStatus(this.executionResults);
 			if(status) {
 				Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
 			}
@@ -72,12 +72,14 @@ module Print.Server {
 			
 		}
 		extractStatus(results: Childprocess.ExecutionResult[]): boolean {
-			results.forEach(result => {
-				if (result.getResult() != "0") {
-					return false;
+			var status: boolean = true;
+			for (var i = 0; i < results.length; i++) {
+				if (results[i].getResult() != "0") {
+					status = false;
+					i = results.length;
 				}
-			});
-			return true;
+			}
+			return status;
 		}
 		toJSON(): string {
 			var executionResultJSON: any[] = [];

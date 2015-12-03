@@ -63,18 +63,22 @@ module Print.Childprocess {
 
 			// Clone secondary repository
 			if (!(repositoryConfiguration.secondary == 'none')) {
+				this.secondaryRepository = new Childprocess.GitCommands(this.token, this.pullRequestNumber, this.folderPath, this.user, repositoryConfiguration.secondary, repositoryConfiguration.name);
 				if (!fs.existsSync(this.folderPath + '/' + repositoryConfiguration.secondary)) {
-					this.secondaryRepository = new Childprocess.GitCommands(this.token, this.pullRequestNumber, this.folderPath, this.user, repositoryConfiguration.secondary, repositoryConfiguration.name);
-					var secondClone = this.secondaryRepository.clone(this.secondaryRepository.name, this.branch);
-					if(secondClone == '-1') {
-						console.log(repositoryConfiguration.secondaryUpstream);
-						console.log(this.secondaryRepository.name);
+					if(this.branch == "master") {
 						gitResult.push(new ExecutionResult("clone secondary", this.secondaryRepository.cloneFromUser(repositoryConfiguration.secondaryUpstream, this.secondaryRepository.name,"master" )));
 						this.secondaryBranch = "master";
 					}
 					else {
-						gitResult.push(new ExecutionResult("clone secondary","0"));
-						this.secondaryBranch = this.branch;
+						var secondClone = this.secondaryRepository.clone(this.secondaryRepository.name, this.branch);
+						if(secondClone == '-1') {
+							gitResult.push(new ExecutionResult("clone secondary", this.secondaryRepository.cloneFromUser(repositoryConfiguration.secondaryUpstream, this.secondaryRepository.name,"master" )));
+							this.secondaryBranch = "master";
+						}
+						else {
+							gitResult.push(new ExecutionResult("clone secondary","0"));
+							this.secondaryBranch = this.branch;
+						}
 					}
 				}
 				else {
@@ -89,7 +93,9 @@ module Print.Childprocess {
 
 			//  Perform actions
 			this.actions = repositoryConfiguration.actions;
-			return gitResult.concat(this.executeActionList());
+			var output = gitResult.concat(this.executeActionList());
+			console.log(output);
+			return output;
 		}
 		createJSON(myClass: any) {
 		}
@@ -105,14 +111,19 @@ module Print.Childprocess {
 	executeAction(action: Action): string {
 			var command = action.task;
 			var args: string[] = [];
+			var path: string = "";
 			if (action.args) {
 				var args = action.args.split(",");
+			}
+			if (action.path) {
+				path = action.path;
 			}
 			if (action.dependency != 'none') {
 				args.push(process.env['HOME'] + '/Video/' + action.dependency);
 			}
 			try {
-				var path = this.folderPath + "/" + this.primaryRepository.name;
+				path = this.folderPath + "/" + this.primaryRepository.name + "/" + path;
+				//var path = this.folderPath + "/" + this.primaryRepository.name;
 				var child = child_process.spawnSync(action.task, args, { cwd: path });
 				return child.status;
 			}

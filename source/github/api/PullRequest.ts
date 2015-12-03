@@ -3,6 +3,7 @@
 /// <reference path="../../server/PullRequest" />
 
 var https = require("https")
+var url = require("url");
 
 module Print.Github.Api {
 	export class PullRequest {
@@ -85,6 +86,39 @@ module Print.Github.Api {
 					onFinishedCallback(teamList[0].id);
 				});
 			}).end();
+		}
+		static updateStatus(state: string, description: string, status_url: string, token: string) {
+			var post_data = JSON.stringify({
+				"state": state,
+				"target_url": "https://github.com/vidhance",
+				"description": description,
+				"context": "PRInt"
+			});
+			var parsedPath = url.parse(status_url).pathname
+			var post_options = {
+				host: "api.github.com",
+				path: parsedPath,
+				method: "POST",
+				headers: {
+					"User-Agent": "print",
+					"Accept": "application/json",
+					"Content-Type": "application/json",
+					"Content-Length": Buffer.byteLength(post_data),
+					"Authorization": "token " + token
+				}
+			};
+			var post_request = https.request(post_options, (resp: any) => {
+				resp.on("data", (data: any) => {
+					console.log('Response: ');
+					//console.log('Response: ' + data);
+				});
+				resp.on("end", () => {
+					console.log("end");
+				});
+			});
+			post_request.write(post_data);
+			post_request.end();
+  
 		}
 	}
 }

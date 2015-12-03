@@ -3,6 +3,7 @@
 /// <reference path="../github/events/PullRequestEvent" />
 /// <reference path="../childprocess/Taskmaster" />
 /// <reference path="../childprocess/ExecutionResult" />
+/// <reference path="../github/api/PullRequest" />
 /// <reference path="User" />
 /// <reference path="Fork" />
 
@@ -25,7 +26,7 @@ module Print.Server {
 		private base: Fork;
 		private taskmaster: Print.Childprocess.Taskmaster;
 		private executionResults: Childprocess.ExecutionResult[] = [];
-		constructor(request: Github.PullRequest, token: string, path: string) {
+		constructor(request: Github.PullRequest, private token: string, path: string) {
 			this.readPullRequestData(request);
 			var user = request.user.login;
 			var organization = request.base.user.login;
@@ -59,7 +60,25 @@ module Print.Server {
 			return result;
 		}
 		processPullRequest() {
-			this.executionResults = this.taskmaster.manage();
+			this.executionResults = this.taskmaster.manage();	
+			var status = this. extractStatus(this.executionResults);
+			console.log("status url = " + this.statusesUrl);
+			if(status) {
+				Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
+			}
+			else {
+				Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
+				
+			}
+			
+		}
+		extractStatus(results: Childprocess.ExecutionResult[]): boolean {
+			results.forEach(result => {
+				if (result.getResult() != "0") {
+					return false;
+				}
+			});
+			return true;
 		}
 		toJSON(): string {
 			var executionResultJSON: any[] = [];
@@ -94,6 +113,7 @@ module Print.Server {
 			this.commitCount = pullRequest.commits;
 			this.url = pullRequest.html_url;
 			this.diffUrl = pullRequest.diff_url;
+			this.statusesUrl = pullRequest.statuses_url;
 			this.user = new User(pullRequest.user);
 			this.head = new Fork(pullRequest.head);
 			this.base = new Fork(pullRequest.base);

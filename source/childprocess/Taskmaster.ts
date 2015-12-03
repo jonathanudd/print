@@ -38,7 +38,6 @@ module Print.Childprocess {
 		manage(): ExecutionResult[] {
 			var gitResult: ExecutionResult[] = [];
 			// Create folder
-			console.log(this.folderPath);
 			if (!fs.existsSync(String(this.folderPath))) {
 				fs.mkdirSync(String(this.folderPath));
 			}
@@ -94,7 +93,6 @@ module Print.Childprocess {
 			//  Perform actions
 			this.actions = repositoryConfiguration.actions;
 			var output = gitResult.concat(this.executeActionList());
-			console.log(output);
 			return output;
 		}
 		createJSON(myClass: any) {

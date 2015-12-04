@@ -1,6 +1,7 @@
 /// <reference path="../../../typings/node/node" />
 /// <reference path="../PullRequest" />
 /// <reference path="../../server/PullRequest" />
+/// <reference path="../../childprocess/JobQueueHandler" />
 
 var https = require("https")
 var url = require("url");
@@ -10,7 +11,7 @@ module Print.Github.Api {
 		//
 		// TODO: Use Github api instead of hardcoded urls
 		//
-		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, onFinishedCallback: (result: Print.Server.PullRequest[], etag: string) => void) {
+		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, jobQueueHandler: Childprocess.JobQueueHandler, onFinishedCallback: (result: Print.Server.PullRequest[], etag: string) => void) {
 			var buffer: string = ""
 			var options = {
 				hostname: "api.github.com",
@@ -30,7 +31,7 @@ module Print.Github.Api {
 				response.on("end", () => {
 					var result: Server.PullRequest[] = [];
 					(<Github.PullRequest[]>JSON.parse(buffer)).forEach(request => {
-						var pr = new Server.PullRequest(request, token, path);
+						var pr = new Server.PullRequest(request, token, path, jobQueueHandler);
 						pr.processPullRequest();
 						result.push(pr);
 					});

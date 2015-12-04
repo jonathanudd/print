@@ -2,132 +2,89 @@
 /// <reference path="../configuration/RepositoryConfiguration" />
 /// <reference path="Action" />
 /// <reference path="ExecutionResult" />
-/// <reference path="GitCommands" />
+/// <reference path="Job" />
+/// <reference path="JobQueue" />
+/// <reference path="JobQueueHandler" />
 
-var child_process = require('child_process')
-var fs = require("fs")
+
+var child_process = require('child_process');
+var fs = require("fs");
 
 module Print.Childprocess {
 	export class Taskmaster {
 		private folderPath: string;
 		private pullRequestNumber: number;
 		private user: string;
-		private primaryRepository: Childprocess.GitCommands;
-		private secondaryRepository: Childprocess.GitCommands;
 		private branch: string;
 		private secondaryBranch: string;
 		private repositoryConfiguration: RepositoryConfiguration;
 		private actions: Action[] = [];
-		constructor(path: string, private token: string, pullRequestNumber: number, user: string, name: string, private organization: string, branch: string) {
+		private jobQueue: JobQueue;
+		private jobQueueHandler: JobQueueHandler;
+		constructor(path: string, private token: string, pullRequestNumber: number, user: string, private name: string, private organization: string, branch: string, jobQueueHandler: JobQueueHandler, allJobsFinishedCallback: (executionResults: ExecutionResult[]) => void) {
 			this.pullRequestNumber = pullRequestNumber;
 			this.folderPath = path + "/" + pullRequestNumber;
 			this.user = user;
-			this.primaryRepository = new Childprocess.GitCommands(token, this.pullRequestNumber,this.folderPath , this.user, name, organization);
 			this.branch = branch;
+			this.repositoryConfiguration = this.readRepositoryConfiguration(this.name);
+			this.actions = this.repositoryConfiguration.actions;
+			this.jobQueue = new JobQueue(this.name + " " + pullRequestNumber.toString(), allJobsFinishedCallback);
+			this.jobQueueHandler = jobQueueHandler;
 		}
-		readRepositoryConfiguration(repository: string) {
-			var json = fs.readFileSync(this.pullRequestNumber + "/" + this.primaryRepository.name + "/" + repository + ".json", "utf-8");
-			var repositoryConfiguration: RepositoryConfiguration = JSON.parse(json);
-			return repositoryConfiguration;
-		}
-		readRepositoryConfigurationTMP(repositoryName: string): RepositoryConfiguration {
+		readRepositoryConfiguration(repositoryName: string): RepositoryConfiguration {
 			var json = fs.readFileSync(repositoryName + ".json", "utf-8");
 			var repositoryConfiguration: RepositoryConfiguration = JSON.parse(json);
 			return repositoryConfiguration;
 		}
-		manage(): ExecutionResult[] {
-			var gitResult: ExecutionResult[] = [];
-			// Create folder
-			if (!fs.existsSync(String(this.folderPath))) {
+		processPullrequest() {
+			if (this.jobQueue.isRunning())
+				this.jobQueue.abortRunningJobs();
+			
+			var results: ExecutionResult[] = [];
+			if (!fs.existsSync(String(this.folderPath)))
 				fs.mkdirSync(String(this.folderPath));
+			
+			var primaryRepositoryFolderPath = this.folderPath + "/" + this.name;
+			var githubBaseUrl = "https://" + this.token + "@github.com"
+			var userUrl = githubBaseUrl + "/" + this.user + "/" + this.name;
+			var organizationUrl = githubBaseUrl + "/" + this.organization + "/" + this.name;
+			if (!fs.existsSync(this.folderPath + '/' + this.name)) { 
+				this.jobQueue.addJob(new Job("Git clone", "git", ["clone", "-b", this.branch, "--single-branch", userUrl], this.folderPath));
+				this.jobQueue.addJob(new Job("Git pull upstream", "git", ["pull", organizationUrl, "master"], primaryRepositoryFolderPath));
+				this.jobQueue.addJob(new Job("Git reset to first HEAD", "git", ["reset", "--hard", "HEAD~0"], primaryRepositoryFolderPath));
 			}
-
-			// Clone, set upstream, fetch and merge primary repo
-			if (!fs.existsSync(this.folderPath + '/' + this.primaryRepository.name)) {
-				gitResult.push(new ExecutionResult("clone", this.primaryRepository.clone(this.primaryRepository.name, this.branch)));
-				var pullResult = this.primaryRepository.pull(this.organization, this.primaryRepository.name, "master");
-				if(pullResult == '-1') {
-					this.primaryRepository.resetToFirstHead(this.primaryRepository.name);
-				}
-				gitResult.push(new ExecutionResult("pull upstream", pullResult));
-				//gitResult.push(new ExecutionResult("pull upstream", this.primaryRepository.pull(this.organization, this.primaryRepository.name, "master")));
-		}
 			else {
-				gitResult.push(new ExecutionResult("pull origin", this.primaryRepository.pull(this.user, this.primaryRepository.name, this.branch)));
-				gitResult.push(new ExecutionResult("pull upstream", this.primaryRepository.pull(this.organization, this.primaryRepository.name, "master")));
+				this.jobQueue.addJob(new Job("Git fetch origin", "git", ["fetch", userUrl], primaryRepositoryFolderPath));
+				this.jobQueue.addJob(new Job("Git reset to origin", "git", ["reset", "--hard", "origin/" + this.branch], primaryRepositoryFolderPath));
+				this.jobQueue.addJob(new Job("Git pull upstream", "git", ["pull", organizationUrl, "master"], primaryRepositoryFolderPath));
+				this.jobQueue.addJob(new Job("Git reset to first HEAD", "git", ["reset", "--hard", "HEAD~0"], primaryRepositoryFolderPath));
 			}
-
-			// Read repository Configuration file in repo
-			var repositoryConfiguration: RepositoryConfiguration = this.readRepositoryConfigurationTMP(this.primaryRepository.name);
-
-			// Clone secondary repository
-			if (!(repositoryConfiguration.secondary == 'none')) {
-				this.secondaryRepository = new Childprocess.GitCommands(this.token, this.pullRequestNumber, this.folderPath, this.user, repositoryConfiguration.secondary, repositoryConfiguration.name);
-				if (!fs.existsSync(this.folderPath + '/' + repositoryConfiguration.secondary)) {
-					if(this.branch == "master") {
-						gitResult.push(new ExecutionResult("clone secondary", this.secondaryRepository.cloneFromUser(repositoryConfiguration.secondaryUpstream, this.secondaryRepository.name,"master" )));
-						this.secondaryBranch = "master";
-					}
-					else {
-						var secondClone = this.secondaryRepository.clone(this.secondaryRepository.name, this.branch);
-						if(secondClone == '-1') {
-							gitResult.push(new ExecutionResult("clone secondary", this.secondaryRepository.cloneFromUser(repositoryConfiguration.secondaryUpstream, this.secondaryRepository.name,"master" )));
-							this.secondaryBranch = "master";
-						}
-						else {
-							gitResult.push(new ExecutionResult("clone secondary","0"));
-							this.secondaryBranch = this.branch;
-						}
-					}
+			var secondaryOrganizationUrl = githubBaseUrl + "/" + this.repositoryConfiguration.secondaryUpstream + "/" + this.repositoryConfiguration.secondary;
+			var secondaryRepositoryFolderPath = this.folderPath + "/" + this.repositoryConfiguration.secondary;
+			if (this.repositoryConfiguration.secondary != "none") {
+				if (!fs.existsSync(this.folderPath + '/' + this.repositoryConfiguration.secondary)) { 
+					this.jobQueue.addJob(new Job("Git clone secondary upstream", "git", ["clone", "-b", "master", "--single-branch", secondaryOrganizationUrl], this.folderPath));
 				}
 				else {
-					if(this.secondaryBranch != "master") {
-						this.secondaryRepository.pull(this.user,this.secondaryRepository.name, this.secondaryBranch);
-					}
-					else {
-						this.secondaryRepository.pull(repositoryConfiguration.secondaryUpstream,this.secondaryRepository.name, this.secondaryBranch)
-					}
+					this.jobQueue.addJob(new Job("Git fetch secondary origin", "git", ["fetch", secondaryOrganizationUrl], secondaryRepositoryFolderPath));
+					this.jobQueue.addJob(new Job("Git reset to secondary origin", "git", ["reset", "--hard", "HEAD~0"], secondaryRepositoryFolderPath));
 				}
 			}
-
-			//  Perform actions
-			this.actions = repositoryConfiguration.actions;
-			var output = gitResult.concat(this.executeActionList());
-			return output;
-		}
-		createJSON(myClass: any) {
-		}
-		executeActionList(): ExecutionResult[] {
-			var executionResult: ExecutionResult[] = [];
-			for (var v in this.actions) {
-				var action = this.actions[v];
-				var result = this.executeAction(action);
-				executionResult.push(new Print.Childprocess.ExecutionResult(action.task, result));
-			}
-			return executionResult;
-		}
-	executeAction(action: Action): string {
-			var command = action.task;
-			var args: string[] = [];
-			var path: string = "";
-			if (action.args) {
-				var args = action.args.split(",");
-			}
-			if (action.path) {
-				path = action.path;
-			}
-			if (action.dependency != 'none') {
-				args.push(process.env['HOME'] + '/Video/' + action.dependency);
-			}
-			try {
-				path = this.folderPath + "/" + this.primaryRepository.name + "/" + path;
-				//var path = this.folderPath + "/" + this.primaryRepository.name;
-				var child = child_process.spawnSync(action.task, args, { cwd: path, timeout:  180000});
-				return child.status;
-			}
-			catch (ex) {
-				return 'fail'
-			}
+			
+			this.actions.forEach(action => {
+				var args: string[] = [];
+				var path: string = primaryRepositoryFolderPath;
+				if (action.args)
+					args = action.args.split(",");
+				if (action.path)
+					path += action.path;
+				if (action.dependency != "none")
+					args.push(process.env["HOME"] + "/Video/" + action.dependency);
+				this.jobQueue.addJob(new Job(action.task, action.task, args, path));
+			});
+			
+			this.jobQueueHandler.addJobQueue(this.jobQueue)
+			//this.jobQueue.runJobs();
 		}
 	}
 }

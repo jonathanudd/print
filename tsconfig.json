@@ -32,6 +32,8 @@
 		"source/childprocess/Action.ts",
 		"source/childprocess/ExecutionResult.ts",
 		"source/childprocess/Taskmaster.ts",
-		"source/childprocess/GitCommands.ts"
+		"source/childprocess/Job.ts",
+		"source/childprocess/JobQueue.ts",
+		"source/childprocess/JobQueueHandler.ts"
 	]
 }

@@ -3,6 +3,7 @@
 	"secondary" : "none",
 	"secondaryUpstream" : "none",
 	"actions" : [
-			{"task" : "./test.sh", "dependency" : "none"}
+			{"task" : "./test.sh", "dependency" : "none"},
+			{"task" : "magic", "dependency" : "none"}
 	]
 }

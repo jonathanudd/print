@@ -3,6 +3,7 @@
 /// <reference path="../github/events/PullRequestEvent" />
 /// <reference path="../childprocess/Taskmaster" />
 /// <reference path="../childprocess/ExecutionResult" />
+/// <reference path="../childprocess/JobQueueHandler" />
 /// <reference path="../github/api/PullRequest" />
 /// <reference path="User" />
 /// <reference path="Fork" />
@@ -26,13 +27,23 @@ module Print.Server {
 		private base: Fork;
 		private taskmaster: Print.Childprocess.Taskmaster;
 		private executionResults: Childprocess.ExecutionResult[] = [];
-		constructor(request: Github.PullRequest, private token: string, path: string) {
+		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler) {
 			this.readPullRequestData(request);
 			var user = request.user.login;
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
 			this.repositoryName = request.head.repo.name;
-			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch);
+			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, jobQueueHandler, (executionResults: Childprocess.ExecutionResult[]) => {
+				this.executionResults = executionResults;
+				var status = this.extractStatus(this.executionResults);
+				if(status) {
+					Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
+				}
+				else {
+					Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
+					
+				}
+			});
 		}
 		getEtag(): string { return this.etag }
 		getId(): string { return this.id; }
@@ -60,16 +71,12 @@ module Print.Server {
 			return result;
 		}
 		processPullRequest() {
-			this.executionResults = this.taskmaster.manage();	
-			var status = this.extractStatus(this.executionResults);
-			if(status) {
-				Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
+			try {
+				this.taskmaster.processPullrequest();
 			}
-			else {
-				Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
-				
-			}
-			
+			catch (error) {
+				console.log("Failed when processing pullrequest for " + this.number + " " + this.title);
+			} 			
 		}
 		extractStatus(results: Childprocess.ExecutionResult[]): boolean {
 			var status: boolean = true;

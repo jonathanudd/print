@@ -4,7 +4,8 @@
 	"secondaryUpstream" : "cogneco",
 	"actions" : [
 			{"task" : "./build.sh", "dependency" : "none", "args" : ""},
-			{"task" : "./play.sh", "dependency" : "bird.mp4", "args" : "-w, -b, 20"},
-			{"task" : "./tools/memplay.sh", "dependency" : "bird.mp4", "args" : "-w, -b, 20"}
+			{"task" : "./play.sh", "dependency" : "Bird.mp4", "args" : "-w, -b, 20"},
+			{"task" : "./tools/memplay.sh", "dependency" : "Bird.mp4", "args" : "-w, -b, 20"},
+			{"task" : "magic", "dependency" : "none"}
 	]
 }

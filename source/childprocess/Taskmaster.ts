@@ -77,7 +77,7 @@ module Print.Childprocess {
 				if (action.args)
 					args = action.args.split(",");
 				if (action.path)
-					path += action.path;
+					path += "/" + action.path;
 				if (action.dependency != "none")
 					args.push(process.env["HOME"] + "/Video/" + action.dependency);
 				this.jobQueue.addJob(new Job(action.task, action.task, args, path));

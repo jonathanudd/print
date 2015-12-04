@@ -33,6 +33,7 @@
 		"source/childprocess/ExecutionResult.ts",
 		"source/childprocess/Taskmaster.ts",
 		"source/childprocess/Job.ts",
-		"source/childprocess/JobQueue.ts"
+		"source/childprocess/JobQueue.ts",
+		"source/childprocess/JobQueueHandler.ts"
 	]
 }

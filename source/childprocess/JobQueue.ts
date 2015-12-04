@@ -19,12 +19,13 @@ module Print.Childprocess {
 			this.resultList = [];
 			this.running = false;
 		}
+		getName() { return this.name }
 		addJob(job: Job) {
 			this.jobs.push(job);
 		}
-		runJobs() {
+		runJobs(reportDoneToHandler: () => void) {
 			this.running = true;
-			this.runJob(this.jobs[this.currentJob]);
+			this.runJob(this.jobs[this.currentJob], reportDoneToHandler);
 		}
 		abortRunningJobs() {
 			console.log("Aborting job queue for: " + this.name);
@@ -34,7 +35,7 @@ module Print.Childprocess {
 		isRunning() {
 			return this.running;
 		}
-		private runJob(job: Job) {
+		private runJob(job: Job, reportDoneToHandler: () => void) {
 			try {
 				this.currentJobProcess = child_process.spawn(job.getCommand(), job.getArgs(), { cwd: job.getExecutionPath() });
 				var buffer: string;
@@ -51,11 +52,12 @@ module Print.Childprocess {
 						this.resultList.push(new ExecutionResult(job.getName(), status));
 						if (this.currentJob < this.jobs.length-1) {
 							this.currentJob++;
-							this.runJob(this.jobs[this.currentJob]);
+							this.runJob(this.jobs[this.currentJob], reportDoneToHandler);
 						}
 						else {
 							this.allJobsFinishedCallback(this.resultList.slice());
 							this.reset();
+							reportDoneToHandler();
 						}
 					}
 				});

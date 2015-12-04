@@ -1,7 +1,8 @@
 /// <reference path="../../typings/node/node.d.ts" />
 /// <reference path="../configuration/ServerConfiguration" />
 /// <reference path="PullRequestQueue" />
-/// <reference path="../github/AccessToken.ts" />
+/// <reference path="../github/AccessToken" />
+/// <reference path="../childprocess/JobQueueHandler" />
 
 var http = require("http");
 var urlparser = require("url");
@@ -24,7 +25,9 @@ module Print.Server {
 		private githubScopes: string = "repo,public_repo";
 		private baseUrl: string = "";
 		private cookieSecret: string = "Oz3Evair";
+		private jobQueueHandler: Childprocess.JobQueueHandler;
 		constructor(configurationFile: string, buildFolder: string) {
+			this.jobQueueHandler = new Childprocess.JobQueueHandler(4);
 			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
 			this.configurations.forEach(configuration => {
 				this.clientId = configuration.clientId;
@@ -32,7 +35,7 @@ module Print.Server {
 				this.baseUrl = configuration.baseUrl + ":" + this.port.toString();
 				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, configuration.name, configuration.organization, 
 					configuration.secret, configuration.authorizationToken, configuration.authorizationOrganization, 
-					configuration.authorizationTeam));
+					configuration.authorizationTeam, this.jobQueueHandler));
 			});
 			this.server = http.createServer((request: any, response: any) => {
 				this.requestCallback(request, response)

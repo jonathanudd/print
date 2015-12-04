@@ -3,6 +3,7 @@
 /// <reference path="../github/events/PullRequestEvent" />
 /// <reference path="../childprocess/Taskmaster" />
 /// <reference path="../childprocess/ExecutionResult" />
+/// <reference path="../childprocess/JobQueueHandler" />
 /// <reference path="../github/api/PullRequest" />
 /// <reference path="User" />
 /// <reference path="Fork" />
@@ -26,13 +27,13 @@ module Print.Server {
 		private base: Fork;
 		private taskmaster: Print.Childprocess.Taskmaster;
 		private executionResults: Childprocess.ExecutionResult[] = [];
-		constructor(request: Github.PullRequest, private token: string, path: string) {
+		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler) {
 			this.readPullRequestData(request);
 			var user = request.user.login;
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
 			this.repositoryName = request.head.repo.name;
-			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, (executionResults: Childprocess.ExecutionResult[]) => {
+			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, jobQueueHandler, (executionResults: Childprocess.ExecutionResult[]) => {
 				this.executionResults = executionResults;
 				var status = this.extractStatus(this.executionResults);
 				if(status) {

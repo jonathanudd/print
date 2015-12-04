@@ -4,6 +4,7 @@
 /// <reference path="ExecutionResult" />
 /// <reference path="Job" />
 /// <reference path="JobQueue" />
+/// <reference path="JobQueueHandler" />
 
 
 var child_process = require('child_process');
@@ -19,14 +20,16 @@ module Print.Childprocess {
 		private repositoryConfiguration: RepositoryConfiguration;
 		private actions: Action[] = [];
 		private jobQueue: JobQueue;
-		constructor(path: string, private token: string, pullRequestNumber: number, user: string, private name: string, private organization: string, branch: string, allJobsFinishedCallback: (executionResults: ExecutionResult[]) => void) {
+		private jobQueueHandler: JobQueueHandler;
+		constructor(path: string, private token: string, pullRequestNumber: number, user: string, private name: string, private organization: string, branch: string, jobQueueHandler: JobQueueHandler, allJobsFinishedCallback: (executionResults: ExecutionResult[]) => void) {
 			this.pullRequestNumber = pullRequestNumber;
 			this.folderPath = path + "/" + pullRequestNumber;
 			this.user = user;
 			this.branch = branch;
 			this.repositoryConfiguration = this.readRepositoryConfiguration(this.name);
 			this.actions = this.repositoryConfiguration.actions;
-			this.jobQueue = new JobQueue(pullRequestNumber.toString(), allJobsFinishedCallback);
+			this.jobQueue = new JobQueue(this.name + " " + pullRequestNumber.toString(), allJobsFinishedCallback);
+			this.jobQueueHandler = jobQueueHandler;
 		}
 		readRepositoryConfiguration(repositoryName: string): RepositoryConfiguration {
 			var json = fs.readFileSync(repositoryName + ".json", "utf-8");
@@ -56,7 +59,7 @@ module Print.Childprocess {
 				this.jobQueue.addJob(new Job("Git pull upstream", "git", ["pull", organizationUrl, "master"], primaryRepositoryFolderPath));
 				this.jobQueue.addJob(new Job("Git reset to first HEAD", "git", ["reset", "--hard", "HEAD~0"], primaryRepositoryFolderPath));
 			}
-			var secondaryOrganizationUrl = githubBaseUrl + "/" + this.organization + "/" + this.repositoryConfiguration.secondary;
+			var secondaryOrganizationUrl = githubBaseUrl + "/" + this.repositoryConfiguration.secondaryUpstream + "/" + this.repositoryConfiguration.secondary;
 			var secondaryRepositoryFolderPath = this.folderPath + "/" + this.repositoryConfiguration.secondary;
 			if (this.repositoryConfiguration.secondary != "none") {
 				if (!fs.existsSync(this.folderPath + '/' + this.repositoryConfiguration.secondary)) { 
@@ -80,7 +83,8 @@ module Print.Childprocess {
 				this.jobQueue.addJob(new Job(action.task, action.task, args, path));
 			});
 			
-			this.jobQueue.runJobs();
+			this.jobQueueHandler.addJobQueue(this.jobQueue)
+			//this.jobQueue.runJobs();
 		}
 	}
 }

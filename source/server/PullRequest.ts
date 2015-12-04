@@ -32,7 +32,17 @@ module Print.Server {
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
 			this.repositoryName = request.head.repo.name;
-			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch);
+			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, (executionResults: Childprocess.ExecutionResult[]) => {
+				this.executionResults = executionResults;
+				var status = this.extractStatus(this.executionResults);
+				if(status) {
+					Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
+				}
+				else {
+					Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
+					
+				}
+			});
 		}
 		getEtag(): string { return this.etag }
 		getId(): string { return this.id; }
@@ -60,17 +70,12 @@ module Print.Server {
 			return result;
 		}
 		processPullRequest() {
-			this.taskmaster.manage(this.number.toString(), (executionResults: Childprocess.ExecutionResult[]) => {
-				this.executionResults = executionResults;
-				var status = this.extractStatus(this.executionResults);
-				if(status) {
-					Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
-				}
-				else {
-					Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
-					
-				}
-			});			
+			try {
+				this.taskmaster.processPullrequest();
+			}
+			catch (error) {
+				console.log("Failed when processing pullrequest for " + this.number + " " + this.title);
+			} 			
 		}
 		extractStatus(results: Childprocess.ExecutionResult[]): boolean {
 			var status: boolean = true;

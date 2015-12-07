@@ -148,11 +148,11 @@ module Print.Server {
 							});
 							var path = process.env['HOME'] + "/repositories/" + urlPathList[4] + "/" + pr.getNumber();
 							if (urlPathList[3] == "terminal")
-								child_process.spawn("gnome-terminal", [], { cwd: path }).on("error", (error) => {
+								child_process.spawn("gnome-terminal", [], { cwd: path }).on("error", (error: any) => {
 									console.log("Failed to spawn gnome-terminal. " + error)
 								});
 							else if(urlPathList[3] == "nautilus")
-								child_process.spawn("nautilus", ["--browser", path]).on("error", (error) => {
+								child_process.spawn("nautilus", ["--browser", path]).on("error", (error: any) => {
 									console.log("Failed to spawn gnome-terminal. " + error)
 								});
 							LocalServer.sendResponse(response, 200, "OK");

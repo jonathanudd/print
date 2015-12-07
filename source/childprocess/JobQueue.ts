@@ -39,7 +39,7 @@ module Print.Childprocess {
 			try {
 				var buffer: string;
 				this.currentJobProcess = child_process.spawn(job.getCommand(), job.getArgs(), { cwd: job.getExecutionPath() });
-				this.currentJobProcess.on("error", (error) => {
+				this.currentJobProcess.on("error", (error: any) => {
 					console.log(this.name + " failed when spawning: " + job.getName() + " with error: " + error);
 				});
 				this.currentJobProcess.stdout.on("data", (data: string) => {

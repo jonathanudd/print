@@ -20,12 +20,13 @@ module Print.Server {
 			this.jobQueueHandler = jobQueueHandler;
 			this.path = path + "/" + this.name;
 			this.createQueueFolder(this.path);
+			this.setNewEtag();
 			Github.Api.PullRequest.getTeamID(parentOrganization, teamName, token, (teamID: string) => {
 				this.teamID = teamID;
 				Github.Api.PullRequest.getTeamMembers(this.teamID, token, (members: Github.User[]) => {
 					this.members = members;
-					Github.Api.PullRequest.queryOpenPullRequests(this.path, organization, name, token, this.jobQueueHandler, (requests: Server.PullRequest[], etag: string) => {
-						this.etag = etag;
+					Github.Api.PullRequest.queryOpenPullRequests(this.path, organization, name, token, this.jobQueueHandler, this, (requests: Server.PullRequest[]) => {
+						this.setNewEtag();
 						this.requests = requests.filter((request) => {
 							return this.verifyTeamMember(request.getUser().getUsername(), this.parentOrganization)
 						});
@@ -49,7 +50,7 @@ module Print.Server {
 					if (this.verifySender(serverSignature, buffer, this.secret)) {
 						var eventData = <Github.Events.PullRequestEvent>JSON.parse(buffer);
 						var pullRequest = this.find(eventData.pull_request.id);
-						this.etag = header["x-github-delivery"].toString();
+						this.setNewEtag();
 						if (pullRequest) {
 							// TODO: Check action to see if its closed, what then?
 							if (!pullRequest.tryUpdate(eventData.action, eventData.pull_request)) {
@@ -61,7 +62,7 @@ module Print.Server {
 						} else {
 							if(this.verifyTeamMember(eventData.pull_request.user.login, this.parentOrganization)) {
 								console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
-								this.requests.push(new PullRequest(eventData.pull_request, this.token, this.path, this.jobQueueHandler));
+								this.requests.push(new PullRequest(eventData.pull_request, this.token, this.path, this.jobQueueHandler, this));
 							}
 						}
 						LocalServer.sendResponse(response, 200, "OK");
@@ -112,6 +113,9 @@ module Print.Server {
 			catch (ex) {
 				console.log(ex);
 			}
+		}
+		setNewEtag() {
+			this.etag = crypt.randomBytes(20).toString("hex");
 		}
 	}
 }

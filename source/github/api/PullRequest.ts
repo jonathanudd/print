@@ -1,5 +1,6 @@
 /// <reference path="../../../typings/node/node" />
 /// <reference path="../PullRequest" />
+/// <reference path="../../server/PullRequestQueue" />
 /// <reference path="../../server/PullRequest" />
 /// <reference path="../../childprocess/JobQueueHandler" />
 
@@ -11,7 +12,7 @@ module Print.Github.Api {
 		//
 		// TODO: Use Github api instead of hardcoded urls
 		//
-		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, jobQueueHandler: Childprocess.JobQueueHandler, onFinishedCallback: (result: Print.Server.PullRequest[], etag: string) => void) {
+		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: Server.PullRequestQueue, onFinishedCallback: (result: Print.Server.PullRequest[]) => void) {
 			var buffer: string = ""
 			var options = {
 				hostname: "api.github.com",
@@ -20,8 +21,6 @@ module Print.Github.Api {
 				headers: { "User-Agent": "print", "Authorization": "token " + token }
 			};
 			https.request(options, (response: any) => {
-				var header = JSON.parse(JSON.stringify(response.headers));
-				var etag: string = header["etag"];
 				response.on("data", (chunk: string) => {
 					buffer += chunk
 				});
@@ -31,11 +30,11 @@ module Print.Github.Api {
 				response.on("end", () => {
 					var result: Server.PullRequest[] = [];
 					(<Github.PullRequest[]>JSON.parse(buffer)).forEach(request => {
-						var pr = new Server.PullRequest(request, token, path, jobQueueHandler);
+						var pr = new Server.PullRequest(request, token, path, jobQueueHandler, parentQueue);
 						pr.processPullRequest();
 						result.push(pr);
 					});
-					onFinishedCallback(result, etag);
+					onFinishedCallback(result);
 				});
 			}).end();
 		}
@@ -48,8 +47,6 @@ module Print.Github.Api {
 				headers: { "User-Agent": "print", "Authorization": "token " + token }
 			};
 			https.request(options, (response: any) => {
-				var header = JSON.parse(JSON.stringify(response.headers));
-				var etag: string = header["etag"];
 				response.on("data", (chunk: string) => {
 					buffer += chunk
 				});
@@ -71,8 +68,6 @@ module Print.Github.Api {
 				headers: { "User-Agent": "print","Authorization": "token " + token},
 			};
 			https.request(options, (response: any) => {
-				var header = JSON.parse(JSON.stringify(response.headers));
-				var etag: string = header["etag"];
 				response.on("data", (chunk: string) => {
 					buffer += chunk
 				});

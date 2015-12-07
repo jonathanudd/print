@@ -40,19 +40,9 @@ module Print.Server {
 			this.repositoryName = request.head.repo.name;
 			this.setNewEtag();
 			parentQueue.setNewEtag();
-			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, jobQueueHandler, (executionResults: Childprocess.ExecutionResult[]) => {
-				this.executionResults = executionResults;
-				this.setNewEtag();
-				parentQueue.setNewEtag();
-				var status = this.extractStatus(this.executionResults);
-				if(status) {
-					Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
-				}
-				else {
-					Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
-					
-				}
-			});
+			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, jobQueueHandler, this.updateExecutionResults.bind(this));
+			
+			this.processPullRequest();
 		}
 		getEtag(): string { return this.etag }
 		getId(): string { return this.id; }
@@ -87,6 +77,19 @@ module Print.Server {
 			catch (error) {
 				console.log("Failed when processing pullrequest for " + this.number + " " + this.title);
 			} 			
+		}
+		updateExecutionResults(executionResults: Childprocess.ExecutionResult[]) {
+			this.executionResults = executionResults;
+			this.setNewEtag();
+			this.parentQueue.setNewEtag();
+			var status = this.extractStatus(this.executionResults);
+			if(status) {
+				Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
+			}
+			else {
+				Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
+				
+			}
 		}
 		extractStatus(results: Childprocess.ExecutionResult[]): boolean {
 			var status: boolean = true;

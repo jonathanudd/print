@@ -28,7 +28,7 @@ module Print.Childprocess {
 			this.branch = branch;
 			this.repositoryConfiguration = this.readRepositoryConfiguration(this.name);
 			this.actions = this.repositoryConfiguration.actions;
-			this.jobQueue = new JobQueue(this.name + " " + pullRequestNumber.toString(), allJobsFinishedCallback);
+			this.jobQueue = new JobQueue(this.name + " " + this.pullRequestNumber.toString(), allJobsFinishedCallback);
 			this.jobQueueHandler = jobQueueHandler;
 		}
 		readRepositoryConfiguration(repositoryName: string): RepositoryConfiguration {
@@ -40,7 +40,8 @@ module Print.Childprocess {
 			if (this.jobQueue.isRunning())
 				this.jobQueue.abortRunningJobs();
 			
-			var results: ExecutionResult[] = [];
+			this.jobQueue = new JobQueue(this.jobQueue.getName(), this.jobQueue.getAllJobsFinishedCallback());
+			
 			if (!fs.existsSync(String(this.folderPath)))
 				fs.mkdirSync(String(this.folderPath));
 			

@@ -8,9 +8,11 @@ module Print.Childprocess {
 		private jobs: Job[];
 		private currentJob: number;
 		private allJobsFinishedCallback: (executionResults: ExecutionResult[]) => void;
+		private reportDoneToHandler: () => void;
 		private resultList: ExecutionResult[];
 		private currentJobProcess: any;
 		private running: boolean;
+		private abort: boolean;
 		constructor(name: string, allJobsFinishedCallback: (executionResults: ExecutionResult[]) => void) {
 			this.name = name;
 			this.jobs = [];
@@ -18,29 +20,33 @@ module Print.Childprocess {
 			this.allJobsFinishedCallback = allJobsFinishedCallback;
 			this.resultList = [];
 			this.running = false;
+			this.abort = false;
 		}
-		getName() { return this.name }
+		getName() { return this.name; }
+		getAllJobsFinishedCallback() { return this.allJobsFinishedCallback; }
 		addJob(job: Job) {
 			this.jobs.push(job);
 		}
 		runJobs(reportDoneToHandler: () => void) {
+			this.reportDoneToHandler = reportDoneToHandler;
 			this.running = true;
-			this.runJob(this.jobs[this.currentJob], reportDoneToHandler);
+			this.runJob(this.jobs[this.currentJob]);
 		}
 		abortRunningJobs() {
 			console.log("Aborting job queue for: " + this.name);
+			this.abort = true;
 			this.currentJobProcess.kill();
-			this.reset();
 		}
 		isRunning() {
 			return this.running;
 		}
-		private runJob(job: Job, reportDoneToHandler: () => void) {
+		private runJob(job: Job) {
 			try {
 				var buffer: string;
 				this.currentJobProcess = child_process.spawn(job.getCommand(), job.getArgs(), { cwd: job.getExecutionPath() });
 				this.currentJobProcess.on("error", (error: any) => {
 					console.log(this.name + " failed when spawning: " + job.getName() + " with error: " + error);
+					this.jobEnd(job, "-1");
 				});
 				this.currentJobProcess.stdout.on("data", (data: string) => {
 					buffer += data;
@@ -51,7 +57,7 @@ module Print.Childprocess {
 						status = signal;
 					clearTimeout(timeout);
 					console.log(this.name + " finished job: " + job.getName() + " with status: " + status);
-					this.jobEnd(job, status, reportDoneToHandler);
+					this.jobEnd(job, status);
 				});
 				var timeout = setTimeout(() => {
 					console.log(this.name + " killing: " + job.getName() + " because of timeout");
@@ -59,29 +65,32 @@ module Print.Childprocess {
 				}, 10 * 60 * 1000);
 			}
 			catch(error) {
-				console.log(this.name + " failed when running: " + job.getName() + " with error: " + error);
-				this.jobEnd(job, "-1", reportDoneToHandler);
+				if (job) {
+					console.log(this.name + " failed when running: " + job.getName() + " with error: " + error);
+					this.jobEnd(job, "-1");
+				}
+				else {
+					console.log(this.name + " failed when running: unknown job with error: " + error);
+					this.reportDoneToHandler();
+				}
 			}
 		}
-		private jobEnd(job: Job, status: string,  reportDoneToHandler: () => void) {
-			this.resultList.push(new ExecutionResult(job.getName(), status));
-			if (this.currentJob < this.jobs.length-1) {
-				this.currentJob++;
-				this.runJob(this.jobs[this.currentJob], reportDoneToHandler);
+		private jobEnd(job: Job, status: string) {
+			if (this.abort) {
+				this.reportDoneToHandler();
 			}
 			else {
-				this.allJobsFinishedCallback(this.resultList.slice());
-				this.reset();
-				reportDoneToHandler();
+				this.resultList.push(new ExecutionResult(job.getName(), status));
+				if (this.currentJob < this.jobs.length-1) {
+					this.currentJob++;
+					this.runJob(this.jobs[this.currentJob]);
+				}
+				else {
+					this.allJobsFinishedCallback(this.resultList.slice());
+					this.running = false;
+					this.reportDoneToHandler();
+				}
 			}
-		}
-		private reset() {
-			while (this.jobs.length > 0)
-				this.jobs.pop();
-			while (this.resultList.length > 0)
-				this.resultList.pop();
-			this.running = false;
-			this.currentJob = 0;
 		}
 	}
 }

@@ -31,7 +31,6 @@ module Print.Github.Api {
 					var result: Server.PullRequest[] = [];
 					(<Github.PullRequest[]>JSON.parse(buffer)).forEach(request => {
 						var pr = new Server.PullRequest(request, token, path, jobQueueHandler, parentQueue);
-						pr.processPullRequest();
 						result.push(pr);
 					});
 					onFinishedCallback(result);

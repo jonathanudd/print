@@ -11,7 +11,7 @@ module Print.Childprocess {
 			this.maxRunningJobQueues = maxRunningJobQueues;			
 		}
 		addJobQueue(jobQueue: JobQueue) {
-			if (this.runningJobQueues <= this.maxRunningJobQueues) {
+			if (this.runningJobQueues < this.maxRunningJobQueues) {
 				this.runningJobQueues++;
 				jobQueue.runJobs(this.onJobQueueDone.bind(this));
 			}
@@ -26,6 +26,7 @@ module Print.Childprocess {
 			else {
 				this.runningJobQueues--;
 			}
+			console.log(this.runningJobQueues.toString() + " job queues running");
 		}
 	}
 }

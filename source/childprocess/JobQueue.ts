@@ -50,19 +50,8 @@ module Print.Childprocess {
 					if (status == undefined || status === null)
 						status = signal;
 					clearTimeout(timeout);
-					if (status != "SIGTERM") {
-						console.log(this.name + " finished job: " + job.getName() + " with status: " + status);
-						this.resultList.push(new ExecutionResult(job.getName(), status));
-						if (this.currentJob < this.jobs.length-1) {
-							this.currentJob++;
-							this.runJob(this.jobs[this.currentJob], reportDoneToHandler);
-						}
-						else {
-							this.allJobsFinishedCallback(this.resultList.slice());
-							this.reset();
-							reportDoneToHandler();
-						}
-					}
+					console.log(this.name + " finished job: " + job.getName() + " with status: " + status);
+					this.jobEnd(job, status, reportDoneToHandler);
 				});
 				var timeout = setTimeout(() => {
 					console.log(this.name + " killing: " + job.getName() + " because of timeout");
@@ -70,7 +59,20 @@ module Print.Childprocess {
 				}, 10 * 60 * 1000);
 			}
 			catch(error) {
-				console.log(this.name + " failed when running: " + job.getName() + " with error: " + error); 
+				console.log(this.name + " failed when running: " + job.getName() + " with error: " + error);
+				this.jobEnd(job, "-1", reportDoneToHandler);
+			}
+		}
+		private jobEnd(job: Job, status: string,  reportDoneToHandler: () => void) {
+			this.resultList.push(new ExecutionResult(job.getName(), status));
+			if (this.currentJob < this.jobs.length-1) {
+				this.currentJob++;
+				this.runJob(this.jobs[this.currentJob], reportDoneToHandler);
+			}
+			else {
+				this.allJobsFinishedCallback(this.resultList.slice());
+				this.reset();
+				reportDoneToHandler();
 			}
 		}
 		private reset() {

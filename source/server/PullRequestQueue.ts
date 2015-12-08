@@ -70,6 +70,8 @@ module Print.Server {
 						console.log("Unauthorized sender");
 						LocalServer.sendResponse(response, 404, "Not found");
 					}
+				}).on("error", (error: any) => {
+					console.log("Failed when processing pullrequest with error: " + error);
 				});
 			}
 			return result;

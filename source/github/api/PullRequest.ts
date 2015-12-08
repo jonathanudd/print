@@ -102,7 +102,9 @@ module Print.Github.Api {
 					"Authorization": "token " + token
 				}
 			};
-			var post_request = https.request(post_options);
+			var post_request = https.request(post_options).on("error", (error: any) => {
+				console.log("Failed when posting status to github with error: " + error);
+			});
 			post_request.write(post_data);
 			post_request.end();
   

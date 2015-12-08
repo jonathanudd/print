@@ -64,9 +64,9 @@ module Print.Server {
 					this.setNewEtag();
 					this.readPullRequestData(request);
 					console.log("Updated pull request: [" + request.title + " - " + request.html_url + "]")
-					result = true;
 					this.processPullRequest();
 				}
+				result = true;
 			}
 			return result;
 		}
@@ -83,13 +83,10 @@ module Print.Server {
 			this.setNewEtag();
 			this.parentQueue.setNewEtag();
 			var status = this.extractStatus(this.executionResults);
-			if(status) {
+			if (status)
 				Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
-			}
-			else {
+			else
 				Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
-				
-			}
 		}
 		extractStatus(results: Childprocess.ExecutionResult[]): boolean {
 			var status: boolean = true;

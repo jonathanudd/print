@@ -37,8 +37,7 @@ module Print.Childprocess {
 			return repositoryConfiguration;
 		}
 		processPullrequest() {
-			if (this.jobQueue.isRunning())
-				this.jobQueue.abortRunningJobs();
+			this.jobQueueHandler.abortQueue(this.jobQueue);
 			
 			this.jobQueue = new JobQueue(this.jobQueue.getName(), this.jobQueue.getAllJobsFinishedCallback());
 			
@@ -85,7 +84,6 @@ module Print.Childprocess {
 			});
 			
 			this.jobQueueHandler.addJobQueue(this.jobQueue)
-			//this.jobQueue.runJobs();
 		}
 	}
 }

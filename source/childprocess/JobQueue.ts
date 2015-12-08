@@ -46,7 +46,6 @@ module Print.Childprocess {
 				this.currentJobProcess = child_process.spawn(job.getCommand(), job.getArgs(), { cwd: job.getExecutionPath() });
 				this.currentJobProcess.on("error", (error: any) => {
 					console.log(this.name + " failed when spawning: " + job.getName() + " with error: " + error);
-					this.jobEnd(job, "-1");
 				});
 				this.currentJobProcess.stdout.on("data", (data: string) => {
 					buffer += data;

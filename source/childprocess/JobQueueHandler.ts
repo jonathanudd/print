@@ -21,12 +21,19 @@ module Print.Childprocess {
 		}
 		onJobQueueDone() {
 			if (this.jobQueues.length > 0) {
-				this.jobQueues.pop().runJobs(this.onJobQueueDone.bind(this));
+				this.jobQueues.shift().runJobs(this.onJobQueueDone.bind(this));
 			}
 			else {
 				this.runningJobQueues--;
 			}
 			console.log(this.runningJobQueues.toString() + " job queues running");
+		}
+		abortQueue(queue: JobQueue) {
+			if (queue.isRunning())
+				queue.abortRunningJobs();
+			this.jobQueues = this.jobQueues.filter((localQueue) => {
+				return queue.getName() != localQueue.getName();
+			});
 		}
 	}
 }

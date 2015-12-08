@@ -89,7 +89,7 @@ module Print.Github.Api {
 				"description": description,
 				"context": "PRInt"
 			});
-			var parsedPath = url.parse(status_url).pathname
+			var parsedPath = url.parse(status_url).pathname;
 			var post_options = {
 				host: "api.github.com",
 				path: parsedPath,
@@ -102,7 +102,10 @@ module Print.Github.Api {
 					"Authorization": "token " + token
 				}
 			};
-			var post_request = https.request(post_options).on("error", (error: any) => {
+			var post_request = https.request(post_options, (resp: any) => {
+				if (resp.statusCode != 201)
+					console.log("Failed when posting status to github. Status " + resp.statusCode + " was returned")
+			}).on("error", (error: any) => {
 				console.log("Failed when posting status to github with error: " + error);
 			});
 			post_request.write(post_data);

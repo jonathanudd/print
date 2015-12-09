@@ -42,12 +42,15 @@ module Print.Childprocess {
 		}
 		private runJob(job: Job) {
 			try {
-				var buffer: string;
+				var buffer: string = "";
 				this.currentJobProcess = child_process.spawn(job.getCommand(), job.getArgs(), { cwd: job.getExecutionPath() });
 				this.currentJobProcess.on("error", (error: any) => {
 					console.log(this.name + " failed when spawning: " + job.getName() + " with error: " + error);
 				});
 				this.currentJobProcess.stdout.on("data", (data: string) => {
+					buffer += data;
+				});
+				this.currentJobProcess.stderr.on("data", (data: string) => {
 					buffer += data;
 				});
 				this.currentJobProcess.on("close", (code: string, signal: string) => {
@@ -56,7 +59,7 @@ module Print.Childprocess {
 						status = signal;
 					clearTimeout(timeout);
 					console.log(this.name + " finished job: " + job.getName() + " with status: " + status);
-					this.jobEnd(job, status);
+					this.jobEnd(job, status, buffer);
 				});
 				var timeout = setTimeout(() => {
 					console.log(this.name + " killing: " + job.getName() + " because of timeout");
@@ -66,7 +69,7 @@ module Print.Childprocess {
 			catch(error) {
 				if (job) {
 					console.log(this.name + " failed when running: " + job.getName() + " with error: " + error);
-					this.jobEnd(job, "-1");
+					this.jobEnd(job, "-1", buffer);
 				}
 				else {
 					console.log(this.name + " failed when running: unknown job with error: " + error);
@@ -74,12 +77,12 @@ module Print.Childprocess {
 				}
 			}
 		}
-		private jobEnd(job: Job, status: string) {
+		private jobEnd(job: Job, status: string, output: string) {
 			if (this.abort) {
 				this.reportDoneToHandler();
 			}
 			else {
-				this.resultList.push(new ExecutionResult(job.getName(), status));
+				this.resultList.push(new ExecutionResult(job.getName(), status, output));
 				if (this.currentJob < this.jobs.length-1) {
 					this.currentJob++;
 					this.runJob(this.jobs[this.currentJob]);

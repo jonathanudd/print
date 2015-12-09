@@ -37,39 +37,22 @@ module Print.Childprocess {
 			return repositoryConfiguration;
 		}
 		processPullrequest() {
-			this.jobQueueHandler.abortQueue(this.jobQueue);
+			this.jobQueueHandler.abortQueue(this.jobQueue);			
+			this.jobQueue = new JobQueue(this.jobQueue.getName(), this.jobQueue.getAllJobsFinishedCallback());			
 			
-			this.jobQueue = new JobQueue(this.jobQueue.getName(), this.jobQueue.getAllJobsFinishedCallback());
-			
-			if (!fs.existsSync(String(this.folderPath)))
-				fs.mkdirSync(String(this.folderPath));
+			Taskmaster.deleteFolderRecursive(this.folderPath);
+			fs.mkdirSync(this.folderPath);
 			
 			var primaryRepositoryFolderPath = this.folderPath + "/" + this.name;
 			var githubBaseUrl = "https://" + this.token + "@github.com"
 			var userUrl = githubBaseUrl + "/" + this.user + "/" + this.name;
 			var organizationUrl = githubBaseUrl + "/" + this.organization + "/" + this.name;
-			if (!fs.existsSync(this.folderPath + '/' + this.name)) { 
-				this.jobQueue.addJob(new Job("Git clone", "git", ["clone", "-b", this.branch, "--single-branch", userUrl], this.folderPath));
-				this.jobQueue.addJob(new Job("Git pull upstream", "git", ["pull", organizationUrl, "master"], primaryRepositoryFolderPath));
-				this.jobQueue.addJob(new Job("Git reset to first HEAD", "git", ["reset", "--hard", "HEAD~0"], primaryRepositoryFolderPath));
-			}
-			else {
-				this.jobQueue.addJob(new Job("Git fetch origin", "git", ["fetch", userUrl], primaryRepositoryFolderPath));
-				this.jobQueue.addJob(new Job("Git reset to origin", "git", ["reset", "--hard", "origin/" + this.branch], primaryRepositoryFolderPath));
-				this.jobQueue.addJob(new Job("Git pull upstream", "git", ["pull", organizationUrl, "master"], primaryRepositoryFolderPath));
-				this.jobQueue.addJob(new Job("Git reset to first HEAD", "git", ["reset", "--hard", "HEAD~0"], primaryRepositoryFolderPath));
-			}
+			this.jobQueue.addJob(new Job("Git clone", "git", ["clone", "-b", this.branch, "--single-branch", userUrl], this.folderPath));
+			this.jobQueue.addJob(new Job("Git pull upstream", "git", ["pull", organizationUrl, "master"], primaryRepositoryFolderPath));
+			this.jobQueue.addJob(new Job("Git reset to first HEAD", "git", ["reset", "--hard", "HEAD~0"], primaryRepositoryFolderPath));
 			var secondaryOrganizationUrl = githubBaseUrl + "/" + this.repositoryConfiguration.secondaryUpstream + "/" + this.repositoryConfiguration.secondary;
 			var secondaryRepositoryFolderPath = this.folderPath + "/" + this.repositoryConfiguration.secondary;
-			if (this.repositoryConfiguration.secondary != "none") {
-				if (!fs.existsSync(this.folderPath + '/' + this.repositoryConfiguration.secondary)) { 
-					this.jobQueue.addJob(new Job("Git clone secondary upstream", "git", ["clone", "-b", "master", "--single-branch", secondaryOrganizationUrl], this.folderPath));
-				}
-				else {
-					this.jobQueue.addJob(new Job("Git fetch secondary origin", "git", ["fetch", secondaryOrganizationUrl], secondaryRepositoryFolderPath));
-					this.jobQueue.addJob(new Job("Git reset to secondary origin", "git", ["reset", "--hard", "HEAD~0"], secondaryRepositoryFolderPath));
-				}
-			}
+			this.jobQueue.addJob(new Job("Git clone secondary upstream", "git", ["clone", "-b", "master", "--single-branch", secondaryOrganizationUrl], this.folderPath));
 			
 			this.actions.forEach(action => {
 				var args: string[] = [];
@@ -84,6 +67,19 @@ module Print.Childprocess {
 			});
 			
 			this.jobQueueHandler.addJobQueue(this.jobQueue)
+		}
+		static deleteFolderRecursive(path: string) {
+  			if( fs.existsSync(path) ) {
+    			fs.readdirSync(path).forEach(function(file: string) {
+      				var curPath = path + "/" + file;
+      				if(fs.lstatSync(curPath).isDirectory()) { // recurse
+        				Taskmaster.deleteFolderRecursive(curPath);
+      				} else { // delete file
+        				fs.unlinkSync(curPath);
+      				}
+    			});
+    			fs.rmdirSync(path);
+  			}
 		}
 	}
 }

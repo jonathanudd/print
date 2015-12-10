@@ -31,7 +31,9 @@ module Print.Server {
 		private taskmaster: Print.Childprocess.Taskmaster;
 		private executionResults: Childprocess.ExecutionResult[] = [];
 		private parentQueue: PullRequestQueue;
+		private jobQueueHandler: Childprocess.JobQueueHandler;
 		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: PullRequestQueue) {
+			this.jobQueueHandler = jobQueueHandler;
 			this.parentQueue = parentQueue;
 			this.readPullRequestData(request);
 			var user = request.user.login;
@@ -41,7 +43,7 @@ module Print.Server {
 			this.setNewEtag();
 			parentQueue.setNewEtag();
 			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, jobQueueHandler, this.updateExecutionResults.bind(this));
-			
+
 			this.processPullRequest();
 		}
 		getEtag(): string { return this.etag }
@@ -75,8 +77,9 @@ module Print.Server {
 				this.taskmaster.processPullrequest();
 			}
 			catch (error) {
-				console.log("Failed when processing pullrequest for " + this.number + " " + this.title);
-			} 			
+				this.jobQueueHandler.onJobQueueDone(this.repositoryName + " " + this.number.toString() + " " + this.taskmaster.getNrOfJobQueuesCreated().toString());
+				console.log("Failed when processing pullrequest for " + this.number + " " + this.title + " with the error: " + error);
+			}
 		}
 		updateExecutionResults(executionResults: Childprocess.ExecutionResult[]) {
 			this.executionResults = executionResults;

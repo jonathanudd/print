@@ -8,13 +8,15 @@ module Print.Childprocess {
 		private jobs: Job[];
 		private currentJob: number;
 		private allJobsFinishedCallback: (executionResults: ExecutionResult[]) => void;
-		private reportDoneToHandler: () => void;
+		private reportDoneToHandler: (id: string) => void;
 		private resultList: ExecutionResult[];
 		private currentJobProcess: any;
 		private running: boolean;
 		private abort: boolean;
-		constructor(name: string, allJobsFinishedCallback: (executionResults: ExecutionResult[]) => void) {
+		private id: string;
+		constructor(name: string, idNumber: number,  allJobsFinishedCallback: (executionResults: ExecutionResult[]) => void) {
 			this.name = name;
+			this.id = name + " " + idNumber.toString();
 			this.jobs = [];
 			this.currentJob = 0;
 			this.allJobsFinishedCallback = allJobsFinishedCallback;
@@ -23,11 +25,12 @@ module Print.Childprocess {
 			this.abort = false;
 		}
 		getName() { return this.name; }
+		getId() { return this.id; }
 		getAllJobsFinishedCallback() { return this.allJobsFinishedCallback; }
 		addJob(job: Job) {
 			this.jobs.push(job);
 		}
-		runJobs(reportDoneToHandler: () => void) {
+		runJobs(reportDoneToHandler: (id: string) => void) {
 			this.reportDoneToHandler = reportDoneToHandler;
 			this.running = true;
 			this.runJob(this.jobs[this.currentJob]);
@@ -59,7 +62,12 @@ module Print.Childprocess {
 						status = signal;
 					clearTimeout(timeout);
 					console.log(this.name + " finished job: " + job.getName() + " with status: " + status);
-					this.jobEnd(job, status, buffer);
+					if (job.getFallbackJob() && status != "0") {
+						console.log(this.name + " running fallback job for " + job.getName());
+						this.runJob(job.getFallbackJob());
+					}
+					else
+						this.jobEnd(job, status, buffer);
 				});
 				var timeout = setTimeout(() => {
 					console.log(this.name + " killing: " + job.getName() + " because of timeout");
@@ -73,13 +81,13 @@ module Print.Childprocess {
 				}
 				else {
 					console.log(this.name + " failed when running: unknown job with error: " + error);
-					this.reportDoneToHandler();
+					this.reportDoneToHandler(this.id);
 				}
 			}
 		}
 		private jobEnd(job: Job, status: string, output: string) {
 			if (this.abort) {
-				this.reportDoneToHandler();
+				this.reportDoneToHandler(this.id);
 			}
 			else {
 				this.resultList.push(new ExecutionResult(job.getName(), status, output));
@@ -90,7 +98,7 @@ module Print.Childprocess {
 				else {
 					this.allJobsFinishedCallback(this.resultList.slice());
 					this.running = false;
-					this.reportDoneToHandler();
+					this.reportDoneToHandler(this.id);
 				}
 			}
 		}

@@ -21,28 +21,32 @@ module Print.Childprocess {
 		private actions: Action[] = [];
 		private jobQueue: JobQueue;
 		private jobQueueHandler: JobQueueHandler;
+		private jobQueuesCreated: number;
 		constructor(path: string, private token: string, pullRequestNumber: number, user: string, private name: string, private organization: string, branch: string, jobQueueHandler: JobQueueHandler, allJobsFinishedCallback: (executionResults: ExecutionResult[]) => void) {
 			this.pullRequestNumber = pullRequestNumber;
 			this.folderPath = path + "/" + pullRequestNumber;
 			this.user = user;
 			this.branch = branch;
+			this.jobQueuesCreated = 0;
 			this.repositoryConfiguration = this.readRepositoryConfiguration(this.name);
 			this.actions = this.repositoryConfiguration.actions;
-			this.jobQueue = new JobQueue(this.name + " " + this.pullRequestNumber.toString(), allJobsFinishedCallback);
+			this.jobQueue = new JobQueue(this.name + " " + this.pullRequestNumber.toString(), this.jobQueuesCreated, allJobsFinishedCallback);
 			this.jobQueueHandler = jobQueueHandler;
 		}
+		getNrOfJobQueuesCreated() { return this.jobQueuesCreated; }
 		readRepositoryConfiguration(repositoryName: string): RepositoryConfiguration {
 			var json = fs.readFileSync(repositoryName + ".json", "utf-8");
 			var repositoryConfiguration: RepositoryConfiguration = JSON.parse(json);
 			return repositoryConfiguration;
 		}
 		processPullrequest() {
-			this.jobQueueHandler.abortQueue(this.jobQueue);			
-			this.jobQueue = new JobQueue(this.jobQueue.getName(), this.jobQueue.getAllJobsFinishedCallback());			
-			
+			this.jobQueueHandler.abortQueue(this.jobQueue);
+			this.jobQueue = new JobQueue(this.jobQueue.getName(), this.jobQueuesCreated, this.jobQueue.getAllJobsFinishedCallback());
+			this.jobQueuesCreated++;
+
 			Taskmaster.deleteFolderRecursive(this.folderPath);
 			fs.mkdirSync(this.folderPath);
-			
+
 			var primaryRepositoryFolderPath = this.folderPath + "/" + this.name;
 			var githubBaseUrl = "https://" + this.token + "@github.com"
 			var userUrl = githubBaseUrl + "/" + this.user + "/" + this.name;
@@ -52,8 +56,10 @@ module Print.Childprocess {
 			this.jobQueue.addJob(new Job("Git reset to first HEAD", "git", ["reset", "--hard", "HEAD~0"], primaryRepositoryFolderPath));
 			var secondaryOrganizationUrl = githubBaseUrl + "/" + this.repositoryConfiguration.secondaryUpstream + "/" + this.repositoryConfiguration.secondary;
 			var secondaryRepositoryFolderPath = this.folderPath + "/" + this.repositoryConfiguration.secondary;
-			this.jobQueue.addJob(new Job("Git clone secondary upstream", "git", ["clone", "-b", "master", "--single-branch", secondaryOrganizationUrl], this.folderPath));
-			
+			var secondaryUserUrl = githubBaseUrl + "/" + this.user + "/" + this.repositoryConfiguration.secondary;
+			var fallbackJob = new Job("Git clone secondary upstream", "git", ["clone", "-b", "master", "--single-branch", secondaryOrganizationUrl], this.folderPath);
+			this.jobQueue.addJob(new Job("Git clone secondary from user", "git", ["clone", "-b", this.branch, "--single-branch", secondaryUserUrl], this.folderPath, fallbackJob));
+
 			this.actions.forEach(action => {
 				var args: string[] = [];
 				var path: string = primaryRepositoryFolderPath;
@@ -65,7 +71,7 @@ module Print.Childprocess {
 					args.push(process.env["HOME"] + "/Video/" + action.dependency);
 				this.jobQueue.addJob(new Job(action.task, action.task, args, path));
 			});
-			
+
 			this.jobQueueHandler.addJobQueue(this.jobQueue)
 		}
 		static deleteFolderRecursive(path: string) {

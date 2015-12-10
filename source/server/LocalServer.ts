@@ -38,7 +38,12 @@ module Print.Server {
 					configuration.authorizationTeam, this.jobQueueHandler));
 			});
 			this.server = http.createServer((request: any, response: any) => {
-				this.requestCallback(request, response)
+				try {
+					this.requestCallback(request, response)
+				}
+				catch (error) {
+					console.log("Failed in request callback on server with error: " + error);
+				}
 			});
 		}
 		start() {
@@ -114,11 +119,11 @@ module Print.Server {
 											if (pr) {
 												var etag: string = header["etag"];
 												if (etag != pr.getEtag()) {
-													response.writeHead(200, "OK", { "etag": pr.getEtag(), "Content-Type": "application/json" })
+													response.writeHead(200, "OK", { "etag": pr.getEtag(), "Content-Type": "application/json" });
 													response.end(pr.toJSON());
 												}
 												else {
-													response.writeHead(304, "Not Modified", { "etag": etag })
+													response.writeHead(304, "Not Modified", { "etag": etag });
 													response.end();
 												}
 											}
@@ -127,6 +132,8 @@ module Print.Server {
 											response.writeHead(400, "Bad request", { "Content-Type": "application/json" });
 											response.end('{ "error": "You are not authorized to view this repository" }');
 										}
+									}).on("error", (error: any) => {
+										console.log("Failed when users read right on repo with error: " + error);
 									});
 								}
 							});
@@ -148,11 +155,11 @@ module Print.Server {
 							});
 							var path = process.env['HOME'] + "/repositories/" + urlPathList[4] + "/" + pr.getNumber();
 							if (urlPathList[3] == "terminal")
-								child_process.spawn("gnome-terminal", [], { cwd: path }).on("error", (error) => {
+								child_process.spawn("gnome-terminal", [], { cwd: path }).on("error", (error: any) => {
 									console.log("Failed to spawn gnome-terminal. " + error)
 								});
 							else if(urlPathList[3] == "nautilus")
-								child_process.spawn("nautilus", ["--browser", path]).on("error", (error) => {
+								child_process.spawn("nautilus", ["--browser", path]).on("error", (error: any) => {
 									console.log("Failed to spawn gnome-terminal. " + error)
 								});
 							LocalServer.sendResponse(response, 200, "OK");
@@ -170,11 +177,11 @@ module Print.Server {
 										if (authResponse.statusCode == 200) {
 											var etag: string = header["etag"];
 											if (etag != queue.getETag()) {
-												response.writeHead(200, "OK", { "etag": queue.getETag(), "Content-Type": "application/json" })
+												response.writeHead(200, "OK", { "etag": queue.getETag(), "Content-Type": "application/json" });
 												response.end(queue.toJSON());
 											} 
 											else {
-												response.writeHead(304, "Not Modified", { "etag": etag })
+												response.writeHead(304, "Not Modified", { "etag": etag });
 												response.end();
 											}
 										}
@@ -182,6 +189,8 @@ module Print.Server {
 											response.writeHead(400, "Bad request", { "Content-Type": "application/json" });
 											response.end('{ "error": "You are not authorized to view this repository" }');
 										}
+									}).on("error", (error: any) => {
+										console.log("Failed when users read right on repo with error: " + error);
 									});
 								}
 							});
@@ -268,6 +277,8 @@ module Print.Server {
 						response.end();
 					}
 				});
+			}).on("error", (error: any) => {
+				console.log("Failed when fetching users access token with error: " + error);
 			});
 			post_request.write(post_data);
 			post_request.end();

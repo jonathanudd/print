@@ -7,6 +7,9 @@
 /// <reference path="../github/api/PullRequest" />
 /// <reference path="User" />
 /// <reference path="Fork" />
+/// <reference path="PullRequestQueue" />
+
+var crypt = require("crypto");
 
 module Print.Server {
 	export class PullRequest {
@@ -27,23 +30,21 @@ module Print.Server {
 		private base: Fork;
 		private taskmaster: Print.Childprocess.Taskmaster;
 		private executionResults: Childprocess.ExecutionResult[] = [];
-		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler) {
+		private parentQueue: PullRequestQueue;
+		private jobQueueHandler: Childprocess.JobQueueHandler;
+		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: PullRequestQueue) {
+			this.jobQueueHandler = jobQueueHandler;
+			this.parentQueue = parentQueue;
 			this.readPullRequestData(request);
 			var user = request.user.login;
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
 			this.repositoryName = request.head.repo.name;
-			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, jobQueueHandler, (executionResults: Childprocess.ExecutionResult[]) => {
-				this.executionResults = executionResults;
-				var status = this.extractStatus(this.executionResults);
-				if(status) {
-					Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
-				}
-				else {
-					Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
-					
-				}
-			});
+			this.setNewEtag();
+			parentQueue.setNewEtag();
+			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, jobQueueHandler, this.updateExecutionResults.bind(this));
+
+			this.processPullRequest();
 		}
 		getEtag(): string { return this.etag }
 		getId(): string { return this.id; }
@@ -62,11 +63,12 @@ module Print.Server {
 				console.log("Closed pull request: [" + request.title + " - " + request.html_url + "]");
 			} else {
 				if (request.created_at != request.updated_at) {
+					this.setNewEtag();
 					this.readPullRequestData(request);
 					console.log("Updated pull request: [" + request.title + " - " + request.html_url + "]")
-					result = true;
 					this.processPullRequest();
 				}
+				result = true;
 			}
 			return result;
 		}
@@ -75,8 +77,19 @@ module Print.Server {
 				this.taskmaster.processPullrequest();
 			}
 			catch (error) {
-				console.log("Failed when processing pullrequest for " + this.number + " " + this.title);
-			} 			
+				this.jobQueueHandler.onJobQueueDone(this.repositoryName + " " + this.number.toString() + " " + this.taskmaster.getNrOfJobQueuesCreated().toString());
+				console.log("Failed when processing pullrequest for " + this.number + " " + this.title + " with the error: " + error);
+			}
+		}
+		updateExecutionResults(executionResults: Childprocess.ExecutionResult[]) {
+			this.executionResults = executionResults;
+			this.setNewEtag();
+			this.parentQueue.setNewEtag();
+			var status = this.extractStatus(this.executionResults);
+			if (status)
+				Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
+			else
+				Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
 		}
 		extractStatus(results: Childprocess.ExecutionResult[]): boolean {
 			var status: boolean = true;
@@ -111,7 +124,6 @@ module Print.Server {
 			});
 		}
 		private readPullRequestData(pullRequest: Github.PullRequest) {
-			this.etag = pullRequest.updated_at;
 			this.id = pullRequest.id;
 			this.number = pullRequest.number;
 			this.title = pullRequest.title;
@@ -125,6 +137,9 @@ module Print.Server {
 			this.user = new User(pullRequest.user);
 			this.head = new Fork(pullRequest.head);
 			this.base = new Fork(pullRequest.base);
+		}
+		setNewEtag() {
+			this.etag = crypt.randomBytes(20).toString("hex");
 		}
 	}
 }

@@ -1,5 +1,6 @@
 /// <reference path="../../../typings/node/node" />
 /// <reference path="../PullRequest" />
+/// <reference path="../../server/PullRequestQueue" />
 /// <reference path="../../server/PullRequest" />
 /// <reference path="../../childprocess/JobQueueHandler" />
 
@@ -11,7 +12,7 @@ module Print.Github.Api {
 		//
 		// TODO: Use Github api instead of hardcoded urls
 		//
-		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, jobQueueHandler: Childprocess.JobQueueHandler, onFinishedCallback: (result: Print.Server.PullRequest[], etag: string) => void) {
+		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: Server.PullRequestQueue, onFinishedCallback: (result: Print.Server.PullRequest[]) => void) {
 			var buffer: string = ""
 			var options = {
 				hostname: "api.github.com",
@@ -20,8 +21,6 @@ module Print.Github.Api {
 				headers: { "User-Agent": "print", "Authorization": "token " + token }
 			};
 			https.request(options, (response: any) => {
-				var header = JSON.parse(JSON.stringify(response.headers));
-				var etag: string = header["etag"];
 				response.on("data", (chunk: string) => {
 					buffer += chunk
 				});
@@ -31,11 +30,10 @@ module Print.Github.Api {
 				response.on("end", () => {
 					var result: Server.PullRequest[] = [];
 					(<Github.PullRequest[]>JSON.parse(buffer)).forEach(request => {
-						var pr = new Server.PullRequest(request, token, path, jobQueueHandler);
-						pr.processPullRequest();
+						var pr = new Server.PullRequest(request, token, path, jobQueueHandler, parentQueue);
 						result.push(pr);
 					});
-					onFinishedCallback(result, etag);
+					onFinishedCallback(result);
 				});
 			}).end();
 		}
@@ -48,8 +46,6 @@ module Print.Github.Api {
 				headers: { "User-Agent": "print", "Authorization": "token " + token }
 			};
 			https.request(options, (response: any) => {
-				var header = JSON.parse(JSON.stringify(response.headers));
-				var etag: string = header["etag"];
 				response.on("data", (chunk: string) => {
 					buffer += chunk
 				});
@@ -71,8 +67,6 @@ module Print.Github.Api {
 				headers: { "User-Agent": "print","Authorization": "token " + token},
 			};
 			https.request(options, (response: any) => {
-				var header = JSON.parse(JSON.stringify(response.headers));
-				var etag: string = header["etag"];
 				response.on("data", (chunk: string) => {
 					buffer += chunk
 				});
@@ -95,7 +89,7 @@ module Print.Github.Api {
 				"description": description,
 				"context": "PRInt"
 			});
-			var parsedPath = url.parse(status_url).pathname
+			var parsedPath = url.parse(status_url).pathname;
 			var post_options = {
 				host: "api.github.com",
 				path: parsedPath,
@@ -108,7 +102,12 @@ module Print.Github.Api {
 					"Authorization": "token " + token
 				}
 			};
-			var post_request = https.request(post_options);
+			var post_request = https.request(post_options, (resp: any) => {
+				if (resp.statusCode != 201)
+					console.log("Failed when posting status to github. Status " + resp.statusCode + " was returned")
+			}).on("error", (error: any) => {
+				console.log("Failed when posting status to github with error: " + error);
+			});
 			post_request.write(post_data);
 			post_request.end();
   

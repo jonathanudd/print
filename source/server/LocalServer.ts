@@ -33,8 +33,8 @@ module Print.Server {
 				this.clientId = configuration.clientId;
 				this.clientSecret = configuration.clientSecret;
 				this.baseUrl = configuration.baseUrl + ":" + this.port.toString();
-				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, configuration.name, configuration.organization, 
-					configuration.secret, configuration.authorizationToken, configuration.authorizationOrganization, 
+				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, configuration.name, configuration.organization,
+					configuration.secret, configuration.authorizationToken, configuration.authorizationOrganization,
 					configuration.authorizationTeam, this.jobQueueHandler));
 			});
 			this.server = http.createServer((request: any, response: any) => {
@@ -179,7 +179,7 @@ module Print.Server {
 											if (etag != queue.getETag()) {
 												response.writeHead(200, "OK", { "etag": queue.getETag(), "Content-Type": "application/json" });
 												response.end(queue.toJSON());
-											} 
+											}
 											else {
 												response.writeHead(304, "Not Modified", { "etag": etag });
 												response.end();
@@ -273,7 +273,7 @@ module Print.Server {
 					else {
 						this.accessTokens.push(accessToken.access_token);
 						var hash = crypt.createHmac("sha1", this.cookieSecret).update(accessToken.access_token).digest("hex");
-						response.writeHead(301, { "Location": url.pathname, "Set-Cookie": "authorized=" + hash + "; path=/" });
+						response.writeHead(301, { "Location": url.pathname + "?authorized=yes", "Set-Cookie": "authorized=" + hash + "; path=/" });
 						response.end();
 					}
 				});

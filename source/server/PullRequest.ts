@@ -32,7 +32,8 @@ module Print.Server {
 		private executionResults: Childprocess.ExecutionResult[] = [];
 		private parentQueue: PullRequestQueue;
 		private jobQueueHandler: Childprocess.JobQueueHandler;
-		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: PullRequestQueue) {
+		private statusTargetUrl: string;
+		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: PullRequestQueue, statusTargetUrl: string) {
 			this.jobQueueHandler = jobQueueHandler;
 			this.parentQueue = parentQueue;
 			this.readPullRequestData(request);
@@ -40,6 +41,7 @@ module Print.Server {
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
 			this.repositoryName = request.head.repo.name;
+			this.statusTargetUrl = statusTargetUrl;
 			this.setNewEtag();
 			parentQueue.setNewEtag();
 			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, jobQueueHandler, this.updateExecutionResults.bind(this));
@@ -87,9 +89,9 @@ module Print.Server {
 			this.parentQueue.setNewEtag();
 			var status = this.extractStatus(this.executionResults);
 			if (status)
-				Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token);
+				Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token, this.statusTargetUrl);
 			else
-				Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token);
+				Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token, this.statusTargetUrl);
 		}
 		extractStatus(results: Childprocess.ExecutionResult[]): boolean {
 			var status: boolean = true;

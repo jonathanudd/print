@@ -16,7 +16,7 @@ module Print.Server {
 		private members: Github.User[];
 		private teamID: string;
 		private jobQueueHandler: Childprocess.JobQueueHandler;
-		constructor(path: string, private name: string, private organization: string, private secret: string, private token: string, private parentOrganization: string, teamName: string, jobQueueHandler: Childprocess.JobQueueHandler) {
+		constructor(path: string, private name: string, private organization: string, private secret: string, private token: string, private parentOrganization: string, teamName: string, jobQueueHandler: Childprocess.JobQueueHandler, statusTargetUrl: string) {
 			this.jobQueueHandler = jobQueueHandler;
 			this.path = path + "/" + this.name;
 			this.createQueueFolder(this.path);
@@ -25,7 +25,7 @@ module Print.Server {
 				this.teamID = teamID;
 				Github.Api.PullRequest.getTeamMembers(this.teamID, token, (members: Github.User[]) => {
 					this.members = members;
-					Github.Api.PullRequest.queryOpenPullRequests(this.path, organization, name, token, this.jobQueueHandler, this, (requests: Server.PullRequest[]) => {
+					Github.Api.PullRequest.queryOpenPullRequests(this.path, organization, name, token, this.jobQueueHandler, this, statusTargetUrl, (requests: Server.PullRequest[]) => {
 						this.setNewEtag();
 						this.requests = requests.filter((request) => {
 							return this.verifyTeamMember(request.getUser().getUsername(), this.parentOrganization)
@@ -37,7 +37,7 @@ module Print.Server {
 		getName(): string { return this.name; }
 		getETag(): string { return this.etag; }
 		getOrganization(): string { return this.organization; }
-		process(name: string, request: any, response: any): boolean {
+		process(name: string, request: any, response: any, statusTargetUrl: string): boolean {
 			var result: boolean;
 			var buffer: string = "";
 			if (result = (name == this.name)) {
@@ -62,7 +62,7 @@ module Print.Server {
 						} else {
 							if(this.verifyTeamMember(eventData.pull_request.user.login, this.parentOrganization)) {
 								console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
-								this.requests.push(new PullRequest(eventData.pull_request, this.token, this.path, this.jobQueueHandler, this));
+								this.requests.push(new PullRequest(eventData.pull_request, this.token, this.path, this.jobQueueHandler, this, statusTargetUrl));
 							}
 						}
 						LocalServer.sendResponse(response, 200, "OK");

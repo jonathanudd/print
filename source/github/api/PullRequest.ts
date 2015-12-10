@@ -12,7 +12,7 @@ module Print.Github.Api {
 		//
 		// TODO: Use Github api instead of hardcoded urls
 		//
-		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: Server.PullRequestQueue, onFinishedCallback: (result: Print.Server.PullRequest[]) => void) {
+		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: Server.PullRequestQueue, targetUrl: string, onFinishedCallback: (result: Print.Server.PullRequest[]) => void) {
 			var buffer: string = ""
 			var options = {
 				hostname: "api.github.com",
@@ -30,7 +30,7 @@ module Print.Github.Api {
 				response.on("end", () => {
 					var result: Server.PullRequest[] = [];
 					(<Github.PullRequest[]>JSON.parse(buffer)).forEach(request => {
-						var pr = new Server.PullRequest(request, token, path, jobQueueHandler, parentQueue);
+						var pr = new Server.PullRequest(request, token, path, jobQueueHandler, parentQueue, targetUrl);
 						result.push(pr);
 					});
 					onFinishedCallback(result);
@@ -82,10 +82,10 @@ module Print.Github.Api {
 				});
 			}).end();
 		}
-		static updateStatus(state: string, description: string, status_url: string, token: string) {
+		static updateStatus(state: string, description: string, status_url: string, token: string, target_url: string) {
 			var post_data = JSON.stringify({
 				"state": state,
-				"target_url": "https://github.com/vidhance",
+				"target_url": target_url,
 				"description": description,
 				"context": "PRInt"
 			});
@@ -110,7 +110,7 @@ module Print.Github.Api {
 			});
 			post_request.write(post_data);
 			post_request.end();
-  
+
 		}
 	}
 }

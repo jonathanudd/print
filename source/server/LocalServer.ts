@@ -35,7 +35,7 @@ module Print.Server {
 				this.baseUrl = configuration.baseUrl + ":" + this.port.toString();
 				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, configuration.name, configuration.organization,
 					configuration.secret, configuration.authorizationToken, configuration.authorizationOrganization,
-					configuration.authorizationTeam, this.jobQueueHandler));
+					configuration.authorizationTeam, this.jobQueueHandler, this.baseUrl + "/" + this.clientRoot));
 			});
 			this.server = http.createServer((request: any, response: any) => {
 				try {
@@ -62,7 +62,7 @@ module Print.Server {
 			var header = JSON.parse(JSON.stringify(request.headers));
 			switch (<string>request.method) {
 				case "POST":
-					if (!this.pullRequestQueues.some(queue => { return queue.process(name, request, response); })) {
+					if (!this.pullRequestQueues.some(queue => { return queue.process(name, request, response, this.baseUrl + "/" + this.clientRoot); })) {
 						LocalServer.sendResponse(response, 404, "Not found");
 					}
 					break;

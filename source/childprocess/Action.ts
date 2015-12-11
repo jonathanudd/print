@@ -1,8 +1,9 @@
 module Print.Childprocess {
 	export class Action {
-		task: string;
-		dependency: string;
+		name: string;
+		command: string;
 		args: string;
 		path: string;
+		hide: string;
 	}
 }

@@ -90,7 +90,8 @@ module Print.Childprocess {
 				this.reportDoneToHandler(this.id);
 			}
 			else {
-				this.resultList.push(new ExecutionResult(job.getName(), status, output));
+				if (!job.hide())
+					this.resultList.push(new ExecutionResult(job.getName(), status, output));
 				if (this.currentJob < this.jobs.length-1) {
 					this.currentJob++;
 					this.runJob(this.jobs[this.currentJob]);

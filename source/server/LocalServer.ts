@@ -14,8 +14,8 @@ var child_process = require("child_process");
 module Print.Server {
 	export class LocalServer {
 		private server: any;
-		private port = 48085;
-		private configurations: ServerConfiguration[] = [];
+		private port: number;
+		private configuration: ServerConfiguration;
 		private pullRequestQueues: PullRequestQueue[] = [];
 		private clientId: string = "";
 		private clientSecret: string = "";
@@ -24,18 +24,20 @@ module Print.Server {
 		private clientRoot: string = "print/print-client";
 		private githubScopes: string = "repo,public_repo";
 		private baseUrl: string = "";
-		private cookieSecret: string = "Oz3Evair";
+		private cookieSecret: string = "";
 		private jobQueueHandler: Childprocess.JobQueueHandler;
 		constructor(configurationFile: string, buildFolder: string) {
-			this.jobQueueHandler = new Childprocess.JobQueueHandler(4);
-			this.configurations = ServerConfiguration.readConfigurationFile(configurationFile);
-			this.configurations.forEach(configuration => {
-				this.clientId = configuration.clientId;
-				this.clientSecret = configuration.clientSecret;
-				this.baseUrl = configuration.baseUrl + ":" + this.port.toString();
-				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, configuration.name, configuration.organization,
-					configuration.secret, configuration.authorizationToken, configuration.authorizationOrganization,
-					configuration.authorizationTeam, this.jobQueueHandler, this.baseUrl + "/" + this.clientRoot));
+			this.configuration = ServerConfiguration.readConfigurationFile(configurationFile);
+			this.jobQueueHandler = new Childprocess.JobQueueHandler(this.configuration.maxRunningJobQueues);
+			this.cookieSecret = this.configuration.cookieSecret;
+			this.port = this.configuration.serverPort;
+			this.clientId = this.configuration.clientId;
+			this.clientSecret = this.configuration.clientSecret;
+			this.baseUrl = this.configuration.baseUrl + ":" + this.port.toString();
+			this.configuration.repos.forEach(repo => {
+				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, repo.name, repo.organization,
+					repo.secret, this.configuration.authorizationToken, this.configuration.authorizationOrganization,
+					this.configuration.authorizationTeam, this.jobQueueHandler, this.baseUrl + "/" + this.clientRoot));
 			});
 			this.server = http.createServer((request: any, response: any) => {
 				try {

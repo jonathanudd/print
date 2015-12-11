@@ -51,25 +51,23 @@ module Print.Childprocess {
 			var githubBaseUrl = "https://" + this.token + "@github.com"
 			var userUrl = githubBaseUrl + "/" + this.user + "/" + this.name;
 			var organizationUrl = githubBaseUrl + "/" + this.organization + "/" + this.name;
-			this.jobQueue.addJob(new Job("Git clone", "git", ["clone", "-b", this.branch, "--single-branch", userUrl], this.folderPath));
+			this.jobQueue.addJob(new Job("Git clone", "git", ["clone", "-b", this.branch, "--single-branch", userUrl], this.folderPath, true));
 			this.jobQueue.addJob(new Job("Git pull upstream", "git", ["pull", organizationUrl, "master"], primaryRepositoryFolderPath));
-			this.jobQueue.addJob(new Job("Git reset to first HEAD", "git", ["reset", "--hard", "HEAD~0"], primaryRepositoryFolderPath));
+			this.jobQueue.addJob(new Job("Git reset to first HEAD", "git", ["reset", "--hard", "HEAD~0"], primaryRepositoryFolderPath, true));
 			var secondaryOrganizationUrl = githubBaseUrl + "/" + this.repositoryConfiguration.secondaryUpstream + "/" + this.repositoryConfiguration.secondary;
 			var secondaryRepositoryFolderPath = this.folderPath + "/" + this.repositoryConfiguration.secondary;
 			var secondaryUserUrl = githubBaseUrl + "/" + this.user + "/" + this.repositoryConfiguration.secondary;
 			var fallbackJob = new Job("Git clone secondary upstream", "git", ["clone", "-b", "master", "--single-branch", secondaryOrganizationUrl], this.folderPath);
-			this.jobQueue.addJob(new Job("Git clone secondary from user", "git", ["clone", "-b", this.branch, "--single-branch", secondaryUserUrl], this.folderPath, fallbackJob));
+			this.jobQueue.addJob(new Job("Git clone secondary from user", "git", ["clone", "-b", this.branch, "--single-branch", secondaryUserUrl], this.folderPath, false, fallbackJob));
 
 			this.actions.forEach(action => {
 				var args: string[] = [];
 				var path: string = primaryRepositoryFolderPath;
 				if (action.args)
-					args = action.args.split(",");
+					args = action.args.replace("~", process.env["HOME"]).split(",");
 				if (action.path)
 					path += "/" + action.path;
-				if (action.dependency != "none")
-					args.push(process.env["HOME"] + "/Video/" + action.dependency);
-				this.jobQueue.addJob(new Job(action.task, action.task, args, path));
+				this.jobQueue.addJob(new Job(action.name, action.command, args, path, (action.hide == "true")));
 			});
 
 			this.jobQueueHandler.addJobQueue(this.jobQueue)

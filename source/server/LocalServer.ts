@@ -93,14 +93,14 @@ module Print.Server {
 									isLocalhost = "yes";
 								response.end('{ "localhost" : "' + isLocalhost + '" }');
 							}
-							else {
-								var filename: string;
-								if (url.pathname == "/" + this.clientRoot)
-									filename = "print-client/index.html";
-								else
-									filename = url.pathname.substr(7);
+							else if (url.pathname.split(".").length > 1) {
+								var filename = url.pathname.substr(7);
 								var contentType = LocalServer.getContentType(filename);
 								LocalServer.sendFileResponse(filename, response, contentType);
+							}
+							else {
+								var contentType = LocalServer.getContentType("print-client/index.html");
+								LocalServer.sendFileResponse("print-client/index.html", response, contentType);
 							}
 					}
 					else if (urlPathList[1] == this.printApiRoot) {

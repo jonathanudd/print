@@ -41,7 +41,7 @@ module Print.Server {
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
 			this.repositoryName = request.head.repo.name;
-			this.statusTargetUrl = statusTargetUrl;
+			this.statusTargetUrl = statusTargetUrl + "/" + this.repositoryName + "/pr/" + this.id;
 			this.setNewEtag();
 			parentQueue.setNewEtag();
 			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, jobQueueHandler, this.updateExecutionResults.bind(this));

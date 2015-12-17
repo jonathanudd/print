@@ -164,6 +164,10 @@ module Print.Server {
 								child_process.spawn("nautilus", ["--browser", path]).on("error", (error: any) => {
 									console.log("Failed to spawn gnome-terminal. " + error)
 								});
+							else if(urlPathList[3] == "android")
+								child_process.exec("tools/android/flash_vidhance.sh", { cwd: (path + "/ooc-vidproc") }, console.log).on("error", (error: any) => {
+									console.log("Failed to spawn flash_vidhance.sh." + error)
+								});
 							LocalServer.sendResponse(response, 200, "OK");
 						}
 						else if (urlPathList[2]) {

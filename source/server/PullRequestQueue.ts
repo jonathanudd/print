@@ -49,20 +49,22 @@ module Print.Server {
 					var serverSignature: string = header["x-hub-signature"].toString();
 					if (this.verifySender(serverSignature, buffer, this.secret)) {
 						var eventData = <Github.Events.PullRequestEvent>JSON.parse(buffer);
-						var pullRequest = this.find(eventData.pull_request.id);
-						this.setNewEtag();
-						if (pullRequest) {
-							// TODO: Check action to see if its closed, what then?
-							if (!pullRequest.tryUpdate(eventData.action, eventData.pull_request)) {
-								this.requests = this.requests.filter((element) => {
-									return element.getId() != eventData.pull_request.id;
-								});
-								console.log("Removed pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
+						if (["opened", "closed", "reopened", "synchronize"].indexOf(eventData.action) >= 0) {
+							var pullRequest = this.find(eventData.pull_request.id);
+							this.setNewEtag();
+							if (pullRequest) {
+								if (!pullRequest.tryUpdate(eventData.action, eventData.pull_request)) {
+									this.requests = this.requests.filter((element) => {
+										return element.getId() != eventData.pull_request.id;
+									});
+									console.log("Removed pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
+								}
 							}
-						} else {
-							if(this.verifyTeamMember(eventData.pull_request.user.login, this.parentOrganization)) {
-								console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
-								this.requests.push(new PullRequest(eventData.pull_request, this.token, this.path, this.jobQueueHandler, this, statusTargetUrl));
+							else {
+								if(this.verifyTeamMember(eventData.pull_request.user.login, this.parentOrganization)) {
+									console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
+									this.requests.push(new PullRequest(eventData.pull_request, this.token, this.path, this.jobQueueHandler, this, statusTargetUrl));
+								}
 							}
 						}
 						LocalServer.sendResponse(response, 200, "OK");

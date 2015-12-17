@@ -149,26 +149,32 @@ module Print.Server {
 							response.end(JSON.stringify(repos));
 						}
 						else if (urlPathList[2] == "explore") {
-							var pr: any;
-							this.pullRequestQueues.forEach(queue => {
-								if (queue.getName() == urlPathList[4]) {
-									pr = queue.find(urlPathList[5]);
-								}
-							});
-							var path = process.env['HOME'] + "/repositories/" + urlPathList[4] + "/" + pr.getNumber();
-							if (urlPathList[3] == "terminal")
-								child_process.spawn("gnome-terminal", [], { cwd: path }).on("error", (error: any) => {
-									console.log("Failed to spawn gnome-terminal. " + error)
+							if (this.baseUrl.indexOf(request.socket.remoteAddress.substr(7)) > 0) {
+								var pr: any;
+								this.pullRequestQueues.forEach(queue => {
+									if (queue.getName() == urlPathList[4]) {
+										pr = queue.find(urlPathList[5]);
+									}
 								});
-							else if(urlPathList[3] == "nautilus")
-								child_process.spawn("nautilus", ["--browser", path]).on("error", (error: any) => {
-									console.log("Failed to spawn gnome-terminal. " + error)
-								});
-							else if(urlPathList[3] == "android")
-								child_process.exec("tools/android/flash_vidhance.sh", { cwd: (path + "/ooc-vidproc") }, console.log).on("error", (error: any) => {
-									console.log("Failed to spawn flash_vidhance.sh." + error)
-								});
-							LocalServer.sendResponse(response, 200, "OK");
+								var path = process.env['HOME'] + "/repositories/" + urlPathList[4] + "/" + pr.getNumber();
+								if (urlPathList[3] == "terminal")
+									child_process.spawn("gnome-terminal", [], { cwd: path }).on("error", (error: any) => {
+										console.log("Failed to spawn gnome-terminal. " + error)
+									});
+								else if(urlPathList[3] == "nautilus")
+									child_process.spawn("nautilus", ["--browser", path]).on("error", (error: any) => {
+										console.log("Failed to spawn gnome-terminal. " + error)
+									});
+								else if(urlPathList[3] == "android")
+									child_process.exec("tools/android/flash_vidhance.sh", { cwd: (path + "/ooc-vidproc") }, console.log).on("error", (error: any) => {
+										console.log("Failed to spawn flash_vidhance.sh." + error)
+									});
+								else if(urlPathList[3] == "runtests")
+									pr.processPullRequest()
+								LocalServer.sendResponse(response, 200, "OK");
+							}
+							else
+								LocalServer.sendResponse(response, 400, "Bad request");
 						}
 						else if (urlPathList[2]) {
 							var repo = urlPathList[2];

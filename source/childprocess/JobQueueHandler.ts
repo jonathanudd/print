@@ -21,6 +21,7 @@ module Print.Childprocess {
 			else {
 				this.jobQueues.push(jobQueue);
 			}
+			this.printStatus()
 		}
 		onJobQueueDone(id: string) {
 			var queueRemoved: boolean = false;
@@ -40,17 +41,35 @@ module Print.Childprocess {
 					this.runningJobQueues--;
 				}
 			}
-			console.log("The following " + this.runningJobQueues.toString() + " job queues are running");
-			this.currentlyRunning.forEach(localQueue => {
-				console.log("-> " + localQueue.getName());
-			});
+			this.printStatus();
 		}
 		abortQueue(queue: JobQueue) {
-			if (queue.isRunning())
+			if (queue.isRunning()) {
 				queue.abortRunningJobs();
+				this.printStatus();
+			}
 			this.jobQueues = this.jobQueues.filter((localQueue) => {
 				return queue.getName() != localQueue.getName();
 			});
+		}
+		printStatus() {
+			if (this.runningJobQueues > 0) {
+				var jobsNow = "";
+				this.currentlyRunning.forEach(localQueue => {
+					jobsNow = jobsNow == "" ? localQueue.getName() : jobsNow + ", " + localQueue.getName()
+				});
+				console.log("\nRunning " + this.runningJobQueues.toString() + " job queues: " + jobsNow);
+			}
+			if (this.jobQueues.length > 0) {
+				var jobsLater = "";
+				this.jobQueues.forEach(localQueue => {
+					jobsLater = jobsLater == "" ? localQueue.getName() : jobsLater + ", " + localQueue.getName()
+				});
+				console.log("Another " + this.jobQueues.length.toString() + " are waiting: " + jobsLater);
+			} else {
+				console.log("No future job queues waiting.");
+			}
+			console.log("");
 		}
 	}
 }

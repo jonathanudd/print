@@ -16,16 +16,18 @@ module Print.Server {
 		private members: Github.User[];
 		private teamID: string;
 		private jobQueueHandler: Childprocess.JobQueueHandler;
-		constructor(path: string, private name: string, private organization: string, private secret: string, private token: string, private parentOrganization: string, teamName: string, jobQueueHandler: Childprocess.JobQueueHandler, statusTargetUrl: string) {
+		private postToGithub: boolean;
+		constructor(path: string, private name: string, private organization: string, private secret: string, private token: string, private parentOrganization: string, teamName: string, jobQueueHandler: Childprocess.JobQueueHandler, statusTargetUrl: string, postToGithub: boolean) {
 			this.jobQueueHandler = jobQueueHandler;
 			this.path = path + "/" + this.name;
+			this.postToGithub = postToGithub;
 			this.createQueueFolder(this.path);
 			this.setNewEtag();
 			Github.Api.PullRequest.getTeamID(parentOrganization, teamName, token, (teamID: string) => {
 				this.teamID = teamID;
 				Github.Api.PullRequest.getTeamMembers(this.teamID, token, (members: Github.User[]) => {
 					this.members = members;
-					Github.Api.PullRequest.queryOpenPullRequests(this.path, organization, name, token, this.jobQueueHandler, this, statusTargetUrl, (requests: Server.PullRequest[]) => {
+					Github.Api.PullRequest.queryOpenPullRequests(this.path, organization, name, token, this.jobQueueHandler, this, statusTargetUrl, this.postToGithub, (requests: Server.PullRequest[]) => {
 						this.setNewEtag();
 						this.requests = requests.filter((request) => {
 							return this.verifyTeamMember(request.getUser().getUsername(), this.parentOrganization)
@@ -63,13 +65,18 @@ module Print.Server {
 							else {
 								if(this.verifyTeamMember(eventData.pull_request.user.login, this.parentOrganization)) {
 									console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
-									this.requests.push(new PullRequest(eventData.pull_request, this.token, this.path, this.jobQueueHandler, this, statusTargetUrl));
+									this.requests.push(new PullRequest(eventData.pull_request, this.token, this.path, this.jobQueueHandler, this, statusTargetUrl, this.postToGithub));
 								}
 							}
 						}
 						LocalServer.sendResponse(response, 200, "OK");
-					} else {
+					}
+					else {
 						console.log("Unauthorized sender");
+						console.log("Header: ");
+						console.log(header);
+						console.log("Payload: ");
+						console.log(buffer);
 						LocalServer.sendResponse(response, 404, "Not found");
 					}
 				}).on("error", (error: any) => {

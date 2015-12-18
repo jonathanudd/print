@@ -34,10 +34,11 @@ module Print.Server {
 			this.clientId = this.configuration.clientId;
 			this.clientSecret = this.configuration.clientSecret;
 			this.baseUrl = this.configuration.baseUrl + ":" + this.port.toString();
+			var postToGithub = this.configuration.postToGithub == "false" ? false : true;
 			this.configuration.repos.forEach(repo => {
 				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, repo.name, repo.organization,
 					repo.secret, this.configuration.authorizationToken, this.configuration.authorizationOrganization,
-					this.configuration.authorizationTeam, this.jobQueueHandler, this.baseUrl + "/" + this.clientRoot));
+					this.configuration.authorizationTeam, this.jobQueueHandler, this.baseUrl + "/" + this.clientRoot, postToGithub));
 			});
 			this.server = http.createServer((request: any, response: any) => {
 				try {

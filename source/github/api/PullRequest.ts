@@ -12,7 +12,7 @@ module Print.Github.Api {
 		//
 		// TODO: Use Github api instead of hardcoded urls
 		//
-		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: Server.PullRequestQueue, targetUrl: string, onFinishedCallback: (result: Print.Server.PullRequest[]) => void) {
+		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: Server.PullRequestQueue, targetUrl: string, postToGithub: boolean, onFinishedCallback: (result: Print.Server.PullRequest[]) => void) {
 			var buffer: string = ""
 			var options = {
 				hostname: "api.github.com",
@@ -30,7 +30,7 @@ module Print.Github.Api {
 				response.on("end", () => {
 					var result: Server.PullRequest[] = [];
 					(<Github.PullRequest[]>JSON.parse(buffer)).forEach(request => {
-						var pr = new Server.PullRequest(request, token, path, jobQueueHandler, parentQueue, targetUrl);
+						var pr = new Server.PullRequest(request, token, path, jobQueueHandler, parentQueue, targetUrl, postToGithub);
 						result.push(pr);
 					});
 					onFinishedCallback(result);
@@ -82,35 +82,36 @@ module Print.Github.Api {
 				});
 			}).end();
 		}
-		static updateStatus(state: string, description: string, status_url: string, token: string, target_url: string) {
-			var post_data = JSON.stringify({
-				"state": state,
-				"target_url": target_url,
-				"description": description,
-				"context": "PRInt"
-			});
-			var parsedPath = url.parse(status_url).pathname;
-			var post_options = {
-				host: "api.github.com",
-				path: parsedPath,
-				method: "POST",
-				headers: {
-					"User-Agent": "print",
-					"Accept": "application/json",
-					"Content-Type": "application/json",
-					"Content-Length": Buffer.byteLength(post_data),
-					"Authorization": "token " + token
-				}
-			};
-			var post_request = https.request(post_options, (resp: any) => {
-				if (resp.statusCode != 201)
-					console.log("Failed when posting status to github. Status " + resp.statusCode + " was returned")
-			}).on("error", (error: any) => {
-				console.log("Failed when posting status to github with error: " + error);
-			});
-			post_request.write(post_data);
-			post_request.end();
-
+		static updateStatus(state: string, description: string, status_url: string, token: string, target_url: string, postToGithub: boolean) {
+			if (postToGithub) {
+				var post_data = JSON.stringify({
+					"state": state,
+					"target_url": target_url,
+					"description": description,
+					"context": "PRInt"
+				});
+				var parsedPath = url.parse(status_url).pathname;
+				var post_options = {
+					host: "api.github.com",
+					path: parsedPath,
+					method: "POST",
+					headers: {
+						"User-Agent": "print",
+						"Accept": "application/json",
+						"Content-Type": "application/json",
+						"Content-Length": Buffer.byteLength(post_data),
+						"Authorization": "token " + token
+					}
+				};
+				var post_request = https.request(post_options, (resp: any) => {
+					if (resp.statusCode != 201)
+						console.log("Failed when posting status to github. Status " + resp.statusCode + " was returned")
+				}).on("error", (error: any) => {
+					console.log("Failed when posting status to github with error: " + error);
+				});
+				post_request.write(post_data);
+				post_request.end();
+			}
 		}
 	}
 }

@@ -13,6 +13,7 @@ module Print {
 		maxRunningJobQueues: number;
 		cookieSecret: string;
 		serverPort: number;
+		postToGithub: string;
 		repos: RepositoryInformation[] = [];
 		static readConfigurationFile(file: string): ServerConfiguration {
 			var result: ServerConfiguration;

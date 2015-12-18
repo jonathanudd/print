@@ -33,7 +33,8 @@ module Print.Server {
 		private parentQueue: PullRequestQueue;
 		private jobQueueHandler: Childprocess.JobQueueHandler;
 		private statusTargetUrl: string;
-		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: PullRequestQueue, statusTargetUrl: string) {
+		private postToGithub: boolean;
+		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: PullRequestQueue, statusTargetUrl: string, postToGithub: boolean) {
 			this.jobQueueHandler = jobQueueHandler;
 			this.parentQueue = parentQueue;
 			this.readPullRequestData(request);
@@ -42,6 +43,7 @@ module Print.Server {
 			var branch = request.head.ref;
 			this.repositoryName = request.head.repo.name;
 			this.statusTargetUrl = statusTargetUrl + "/" + this.repositoryName + "/pr/" + this.id;
+			this.postToGithub = postToGithub;
 			this.setNewEtag();
 			parentQueue.setNewEtag();
 			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, jobQueueHandler, this.updateExecutionResults.bind(this));
@@ -77,12 +79,12 @@ module Print.Server {
 		processPullRequest() {
 			try {
 				this.taskmaster.processPullrequest();
-				Github.Api.PullRequest.updateStatus("pending", "PRInt is working on your pull request.", this.statusesUrl, this.token, this.statusTargetUrl);
+				Github.Api.PullRequest.updateStatus("pending", "PRInt is working on your pull request.", this.statusesUrl, this.token, this.statusTargetUrl, this.postToGithub);
 			}
 			catch (error) {
 				this.jobQueueHandler.onJobQueueDone(this.repositoryName + " " + this.number.toString() + " " + this.taskmaster.getNrOfJobQueuesCreated().toString());
 				console.log("Failed when processing pullrequest for " + this.number + " " + this.title + " with the error: " + error);
-				Github.Api.PullRequest.updateStatus("error", "There was an error when PRInt was processing your pull request.", this.statusesUrl, this.token, this.statusTargetUrl);
+				Github.Api.PullRequest.updateStatus("error", "There was an error when PRInt was processing your pull request.", this.statusesUrl, this.token, this.statusTargetUrl, this.postToGithub);
 			}
 		}
 		updateExecutionResults(executionResults: Childprocess.ExecutionResult[]) {
@@ -91,9 +93,9 @@ module Print.Server {
 			this.parentQueue.setNewEtag();
 			var status = this.extractStatus(this.executionResults);
 			if (status)
-				Github.Api.PullRequest.updateStatus("success", "PRInt succeeded. You are great!", this.statusesUrl, this.token, this.statusTargetUrl);
+				Github.Api.PullRequest.updateStatus("success", "PRInt succeeded. You are great!", this.statusesUrl, this.token, this.statusTargetUrl, this.postToGithub);
 			else
-				Github.Api.PullRequest.updateStatus("failure", "PRInt failed. This is not good!", this.statusesUrl, this.token, this.statusTargetUrl);
+				Github.Api.PullRequest.updateStatus("failure", "PRInt failed. This is not good!", this.statusesUrl, this.token, this.statusTargetUrl, this.postToGithub);
 		}
 		extractStatus(results: Childprocess.ExecutionResult[]): boolean {
 			var status: boolean = true;

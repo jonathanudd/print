@@ -77,6 +77,9 @@ module Print.Server {
 			return result;
 		}
 		processPullRequest() {
+			this.executionResults = [];
+			this.setNewEtag();
+			this.parentQueue.setNewEtag();
 			try {
 				this.taskmaster.processPullrequest();
 				Github.Api.PullRequest.updateStatus("pending", "PRInt is working on your pull request.", this.statusesUrl, this.token, this.statusTargetUrl, this.postToGithub);

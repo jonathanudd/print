@@ -22,7 +22,7 @@ module Print.Childprocess {
 		private jobQueue: JobQueue;
 		private jobQueueHandler: JobQueueHandler;
 		private jobQueuesCreated: number;
-		constructor(path: string, private token: string, pullRequestNumber: number, user: string, private name: string, private organization: string, branch: string, jobQueueHandler: JobQueueHandler, allJobsFinishedCallback: (executionResults: ExecutionResult[]) => void) {
+		constructor(path: string, private token: string, pullRequestNumber: number, user: string, private name: string, private organization: string, branch: string, jobQueueHandler: JobQueueHandler, updateExecutionResults: (executionResults: ExecutionResult[]) => void) {
 			this.pullRequestNumber = pullRequestNumber;
 			this.folderPath = path + "/" + pullRequestNumber;
 			this.user = user;
@@ -30,7 +30,7 @@ module Print.Childprocess {
 			this.jobQueuesCreated = 0;
 			this.repositoryConfiguration = this.readRepositoryConfiguration(this.name);
 			this.actions = this.repositoryConfiguration.actions;
-			this.jobQueue = new JobQueue(this.name + " " + this.pullRequestNumber.toString(), this.jobQueuesCreated, allJobsFinishedCallback);
+			this.jobQueue = new JobQueue(this.name + " " + this.pullRequestNumber.toString(), this.jobQueuesCreated, updateExecutionResults);
 			this.jobQueueHandler = jobQueueHandler;
 		}
 		getNrOfJobQueuesCreated() { return this.jobQueuesCreated; }
@@ -41,7 +41,7 @@ module Print.Childprocess {
 		}
 		processPullrequest() {
 			this.jobQueueHandler.abortQueue(this.jobQueue);
-			this.jobQueue = new JobQueue(this.jobQueue.getName(), this.jobQueuesCreated, this.jobQueue.getAllJobsFinishedCallback());
+			this.jobQueue = new JobQueue(this.jobQueue.getName(), this.jobQueuesCreated, this.jobQueue.getUpdateExecutionResultsCallback());
 			this.jobQueuesCreated++;
 
 			Taskmaster.deleteFolderRecursive(this.folderPath);

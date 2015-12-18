@@ -7,26 +7,26 @@ module Print.Childprocess {
 		private name: string;
 		private jobs: Job[];
 		private currentJob: number;
-		private allJobsFinishedCallback: (executionResults: ExecutionResult[]) => void;
+		private updateExecutionResults: (executionResults: ExecutionResult[]) => void;
 		private reportDoneToHandler: (id: string) => void;
 		private resultList: ExecutionResult[];
 		private currentJobProcess: any;
 		private running: boolean;
 		private abort: boolean;
 		private id: string;
-		constructor(name: string, idNumber: number,  allJobsFinishedCallback: (executionResults: ExecutionResult[]) => void) {
+		constructor(name: string, idNumber: number,  updateExecutionResults: (executionResults: ExecutionResult[]) => void) {
 			this.name = name;
 			this.id = name + " " + idNumber.toString();
 			this.jobs = [];
 			this.currentJob = 0;
-			this.allJobsFinishedCallback = allJobsFinishedCallback;
+			this.updateExecutionResults = updateExecutionResults;
 			this.resultList = [];
 			this.running = false;
 			this.abort = false;
 		}
 		getName() { return this.name; }
 		getId() { return this.id; }
-		getAllJobsFinishedCallback() { return this.allJobsFinishedCallback; }
+		getUpdateExecutionResultsCallback() { return this.updateExecutionResults; }
 		addJob(job: Job) {
 			this.jobs.push(job);
 		}
@@ -90,14 +90,16 @@ module Print.Childprocess {
 				this.reportDoneToHandler(this.id);
 			}
 			else {
-				if (!job.hide())
+				if (!job.hide()) {
 					this.resultList.push(new ExecutionResult(job.getName(), status, output));
+					this.updateExecutionResults(this.resultList.slice());
+				}
 				if (this.currentJob < this.jobs.length-1) {
 					this.currentJob++;
 					this.runJob(this.jobs[this.currentJob]);
 				}
 				else {
-					this.allJobsFinishedCallback(this.resultList.slice());
+					this.updateExecutionResults(this.resultList.slice());
 					this.running = false;
 					this.reportDoneToHandler(this.id);
 				}

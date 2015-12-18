@@ -7,14 +7,14 @@ module Print.Childprocess {
 		private name: string;
 		private jobs: Job[];
 		private currentJob: number;
-		private updateExecutionResults: (executionResults: ExecutionResult[]) => void;
+		private updateExecutionResults: (executionResults: ExecutionResult[], allJobsComplete: boolean) => void;
 		private reportDoneToHandler: (id: string) => void;
 		private resultList: ExecutionResult[];
 		private currentJobProcess: any;
 		private running: boolean;
 		private abort: boolean;
 		private id: string;
-		constructor(name: string, idNumber: number,  updateExecutionResults: (executionResults: ExecutionResult[]) => void) {
+		constructor(name: string, idNumber: number,  updateExecutionResults: (executionResults: ExecutionResult[], allJobsComplete: boolean) => void) {
 			this.name = name;
 			this.id = name + " " + idNumber.toString();
 			this.jobs = [];
@@ -92,14 +92,14 @@ module Print.Childprocess {
 			else {
 				if (!job.hide()) {
 					this.resultList.push(new ExecutionResult(job.getName(), status, output));
-					this.updateExecutionResults(this.resultList.slice());
+					this.updateExecutionResults(this.resultList.slice(), false);
 				}
 				if (this.currentJob < this.jobs.length-1) {
 					this.currentJob++;
 					this.runJob(this.jobs[this.currentJob]);
 				}
 				else {
-					this.updateExecutionResults(this.resultList.slice());
+					this.updateExecutionResults(this.resultList.slice(), true);
 					this.running = false;
 					this.reportDoneToHandler(this.id);
 				}

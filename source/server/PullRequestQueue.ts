@@ -73,8 +73,8 @@ module Print.Server {
 					}
 					else {
 						console.log("Unauthorized sender");
-						console.log("Header: " + header);
-						console.log("Payload: " + JSON.parse(buffer));
+						console.log("Header: " + JSON.stringify(header));
+						console.log("Payload: " + JSON.stringify(buffer));
 						LocalServer.sendResponse(response, 404, "Not found");
 					}
 				}).on("error", (error: any) => {

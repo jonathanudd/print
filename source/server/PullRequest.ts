@@ -34,6 +34,7 @@ module Print.Server {
 		private jobQueueHandler: Childprocess.JobQueueHandler;
 		private statusTargetUrl: string;
 		private postToGithub: boolean;
+		private allJobsComplete: string;
 		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: PullRequestQueue, statusTargetUrl: string, postToGithub: boolean) {
 			this.jobQueueHandler = jobQueueHandler;
 			this.parentQueue = parentQueue;
@@ -78,6 +79,7 @@ module Print.Server {
 		}
 		processPullRequest() {
 			this.executionResults = [];
+			this.allJobsComplete = "false";
 			this.setNewEtag();
 			this.parentQueue.setNewEtag();
 			try {
@@ -90,15 +92,18 @@ module Print.Server {
 				Github.Api.PullRequest.updateStatus("error", "There was an error when PRInt was processing your pull request.", this.statusesUrl, this.token, this.statusTargetUrl, this.postToGithub);
 			}
 		}
-		updateExecutionResults(executionResults: Childprocess.ExecutionResult[]) {
+		updateExecutionResults(executionResults: Childprocess.ExecutionResult[], allJobsComplete: boolean) {
 			this.executionResults = executionResults;
 			this.setNewEtag();
 			this.parentQueue.setNewEtag();
-			var status = this.extractStatus(this.executionResults);
-			if (status)
-				Github.Api.PullRequest.updateStatus("success", "PRInt succeeded. You are great!", this.statusesUrl, this.token, this.statusTargetUrl, this.postToGithub);
-			else
-				Github.Api.PullRequest.updateStatus("failure", "PRInt failed. This is not good!", this.statusesUrl, this.token, this.statusTargetUrl, this.postToGithub);
+			if (allJobsComplete) {
+				this.allJobsComplete = "true";
+				var status = this.extractStatus(this.executionResults);
+				if (status)
+					Github.Api.PullRequest.updateStatus("success", "PRInt succeeded. You are great!", this.statusesUrl, this.token, this.statusTargetUrl, this.postToGithub);
+				else
+					Github.Api.PullRequest.updateStatus("failure", "PRInt failed. This is not good!", this.statusesUrl, this.token, this.statusTargetUrl, this.postToGithub);
+			}
 		}
 		extractStatus(results: Childprocess.ExecutionResult[]): boolean {
 			var status: boolean = true;
@@ -129,7 +134,8 @@ module Print.Server {
 				"executionResults": executionResultJSON,
 				"user": JSON.parse(this.user.toJSON()),
 				"head": JSON.parse(this.head.toJSON()),
-				"base": JSON.parse(this.base.toJSON())
+				"base": JSON.parse(this.base.toJSON()),
+				"allJobsComplete": this.allJobsComplete
 			});
 		}
 		private readPullRequestData(pullRequest: Github.PullRequest) {

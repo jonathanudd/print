@@ -70,8 +70,11 @@ module Print.Server {
 							}
 						}
 						LocalServer.sendResponse(response, 200, "OK");
-					} else {
+					}
+					else {
 						console.log("Unauthorized sender");
+						console.log("Header: " + header);
+						console.log("Payload: " + JSON.parse(buffer));
 						LocalServer.sendResponse(response, 404, "Not found");
 					}
 				}).on("error", (error: any) => {

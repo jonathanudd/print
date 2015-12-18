@@ -77,10 +77,12 @@ module Print.Server {
 		processPullRequest() {
 			try {
 				this.taskmaster.processPullrequest();
+				Github.Api.PullRequest.updateStatus("pending", "PRInt is working on your pull request.", this.statusesUrl, this.token, this.statusTargetUrl);
 			}
 			catch (error) {
 				this.jobQueueHandler.onJobQueueDone(this.repositoryName + " " + this.number.toString() + " " + this.taskmaster.getNrOfJobQueuesCreated().toString());
 				console.log("Failed when processing pullrequest for " + this.number + " " + this.title + " with the error: " + error);
+				Github.Api.PullRequest.updateStatus("error", "There was an error when PRInt was processing your pull request.", this.statusesUrl, this.token, this.statusTargetUrl);
 			}
 		}
 		updateExecutionResults(executionResults: Childprocess.ExecutionResult[]) {
@@ -89,9 +91,9 @@ module Print.Server {
 			this.parentQueue.setNewEtag();
 			var status = this.extractStatus(this.executionResults);
 			if (status)
-				Github.Api.PullRequest.updateStatus("success", "The build succeeded! You are great!", this.statusesUrl, this.token, this.statusTargetUrl);
+				Github.Api.PullRequest.updateStatus("success", "PRInt succeeded. You are great!", this.statusesUrl, this.token, this.statusTargetUrl);
 			else
-				Github.Api.PullRequest.updateStatus("failure", "The build failed! This is not good!", this.statusesUrl, this.token, this.statusTargetUrl);
+				Github.Api.PullRequest.updateStatus("failure", "PRInt failed. This is not good!", this.statusesUrl, this.token, this.statusTargetUrl);
 		}
 		extractStatus(results: Childprocess.ExecutionResult[]): boolean {
 			var status: boolean = true;

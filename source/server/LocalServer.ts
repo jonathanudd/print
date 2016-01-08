@@ -150,7 +150,7 @@ module Print.Server {
 							response.end(JSON.stringify(repos));
 						}
 						else if (urlPathList[2] == "explore") {
-							if (this.baseUrl.indexOf(request.socket.remoteAddress.substr(7)) > 0) {
+							if (this.baseUrl.indexOf(request.socket.remoteAddress.substr(7)) > 0 || urlPathList[3] == "runtests") {
 								var pr: any;
 								this.pullRequestQueues.forEach(queue => {
 									if (queue.getName() == urlPathList[4]) {

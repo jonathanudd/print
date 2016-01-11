@@ -62,12 +62,7 @@ module Print.Childprocess {
 						status = signal;
 					clearTimeout(timeout);
 					console.log(this.name + " finished job: " + job.getName() + " with status: " + status);
-					if (job.getFallbackJob() && status != "0") {
-						console.log(this.name + " running fallback job for " + job.getName());
-						this.runJob(job.getFallbackJob());
-					}
-					else
-						this.jobEnd(job, status, buffer);
+					this.jobEnd(job, status, buffer);
 				});
 				var timeout = setTimeout(() => {
 					console.log(this.name + " killing: " + job.getName() + " because of timeout");
@@ -94,7 +89,11 @@ module Print.Childprocess {
 					this.resultList.push(new ExecutionResult(job.getName(), status, output));
 					this.updateExecutionResults(this.resultList.slice(), false);
 				}
-				if (this.currentJob < this.jobs.length-1) {
+				if (job.getFallbackJob() && status != "0") {
+					console.log(this.name + " running fallback job for " + job.getName());
+					this.runJob(job.getFallbackJob());
+				}
+				else if (this.currentJob < this.jobs.length-1) {
 					this.currentJob++;
 					this.runJob(this.jobs[this.currentJob]);
 				}

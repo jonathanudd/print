@@ -1,7 +1,14 @@
 /// <reference path="../typings/node/node" />
 /// <reference path="server/LocalServer" />
 
-var fs = require("fs")
+var fs = require("fs");
+
+var originalConsole = console["log"];
+console["log"] = function() {
+    if (arguments[0])
+        process.stdout.write("[" + (new Date).toLocaleTimeString() + "] ");
+    return originalConsole.apply(console, arguments)
+}
 
 module Print {
 	export class Program {

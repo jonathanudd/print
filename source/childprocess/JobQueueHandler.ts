@@ -58,7 +58,8 @@ module Print.Childprocess {
 				this.currentlyRunning.forEach(localQueue => {
 					jobsNow = jobsNow == "" ? localQueue.getName() : jobsNow + ", " + localQueue.getName()
 				});
-				console.log("\nRunning " + this.runningJobQueues.toString() + " job queues: " + jobsNow);
+                console.log("");
+				console.log("Running " + this.runningJobQueues.toString() + " job queues: " + jobsNow);
 			}
 			if (this.jobQueues.length > 0) {
 				var jobsLater = "";

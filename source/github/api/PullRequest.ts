@@ -22,7 +22,7 @@ module Print.Github.Api {
 			};
 			https.request(options, (response: any) => {
 				response.on("data", (chunk: string) => {
-					buffer += chunk
+					buffer += chunk;
 				});
 				response.on("error", (error: any) => {
 					console.log("ERROR:", error.toString());
@@ -31,6 +31,23 @@ module Print.Github.Api {
 					var result: Server.PullRequest[] = [];
 					(<Github.PullRequest[]>JSON.parse(buffer)).forEach(request => {
 						var pr = new Server.PullRequest(request, token, path, jobQueueHandler, parentQueue, targetUrl, postToGithub);
+                        var labelsBuffer: string = ""
+                        options.path = "/repos/" + organization + "/" + repository + "/issues/" + request.number + "/labels"
+                        https.request(options, (labelsResponse: any) => {
+                            labelsResponse.on("data", (chunk: string) => {
+                                labelsBuffer += chunk;
+                            });
+                            labelsResponse.on("error", (error: any) => {
+                               console.log("Error when fetching labels: ", error.toString()) ;
+                            });
+                            labelsResponse.on("end", () => {
+                                var labels: Server.Label[] = [];
+                                (<Github.Label[]>JSON.parse(labelsBuffer)).forEach(label => {
+                                    labels.push(new Server.Label(label));
+                                });                                
+                                pr.setLabels(labels);
+                            })
+                        }).end();
 						result.push(pr);
 					});
 					onFinishedCallback(result);

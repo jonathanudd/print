@@ -5,5 +5,6 @@ module Print.Childprocess {
 		args: string;
 		path: string;
 		hide: string;
+        fallback: Action;
 	}
 }

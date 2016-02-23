@@ -63,18 +63,21 @@ module Print.Childprocess {
 			fallbackJob = new Job("Git abort merge secondary", "git", ["merge", "--abort"], secondaryRepositoryFolderPath, true);
 			this.jobQueue.addJob(new Job("Git pull secondary upstream", "git", ["pull", secondaryOrganizationUrl, "master"], secondaryRepositoryFolderPath, false, fallbackJob));
 
-			this.actions.forEach(action => {
-				var args: string[] = [];
-				var path: string = primaryRepositoryFolderPath;
-				if (action.args)
-					args = action.args.replace("~", process.env["HOME"]).split(",");
-				if (action.path)
-					path += "/" + action.path;
-				this.jobQueue.addJob(new Job(action.name, action.command, args, path, (action.hide == "true")));
-			});
-
+			this.actions.forEach(action => { this.jobQueue.addJob(Taskmaster.createJob(action, primaryRepositoryFolderPath)); });
 			this.jobQueueHandler.addJobQueue(this.jobQueue)
 		}
+        private static createJob(action: Action, repositoryPath: string) {
+            var args: string[] = [];
+            var path: string = repositoryPath;
+            if (action.args)
+                args = action.args.replace("~", process.env["HOME"]).split(",");
+            if (action.path)
+                path += "/" + action.path;
+            var fallback: Job;
+            if (action.fallback)
+                fallback = Taskmaster.createJob(action.fallback, repositoryPath);
+            return new Job(action.name, action.command, args, path, (action.hide == "true"), fallback);
+        }
 		static deleteFolderRecursive(path: string) {
   			if( fs.existsSync(path) ) {
     			fs.readdirSync(path).forEach(function(file: string) {

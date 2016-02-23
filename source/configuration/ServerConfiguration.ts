@@ -14,6 +14,7 @@ module Print {
 		cookieSecret: string;
 		serverPort: number;
 		postToGithub: string;
+		admin: string;
 		repos: RepositoryInformation[] = [];
 		static readConfigurationFile(file: string): ServerConfiguration {
 			var result: ServerConfiguration;

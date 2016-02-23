@@ -89,12 +89,29 @@ module Print.Server {
 						response.end();
 					}
 					else if (urlPathList[1] + "/" + urlPathList[2] == this.clientRoot) {
-							if (urlPathList[3] == "am-i-localhost") {
+							if (urlPathList[3] == "check-privileges") {
 								response.writeHead(200, "OK", { "Content-Type": "application/json" });
-								var isLocalhost = "no";
-								if (this.baseUrl.indexOf(request.socket.remoteAddress.substr(7)) > 0)
-									isLocalhost = "yes";
-								response.end('{ "localhost" : "' + isLocalhost + '" }');
+								var isAdmin = "no";
+                                var options = {
+                                    hostname: "api.github.com",
+                                    path: "/user",
+                                    headers: { "User-Agent": "print", "Authorization" : "token " + accessToken }
+                                };
+                                var buffer: string = "";
+                                https.get(options, (authResponse: any) => {
+                                    authResponse.on("data", (data: string) => {
+                                        buffer += data;
+                                    });
+                                    authResponse.on("error", (error: any) => {
+                                       console.log("Error when checking if admin: " + error.toString()) 
+                                    });
+                                    authResponse.on("end", () => {
+                                        var user = <Github.User>JSON.parse(buffer);
+                                        if (user.login == this.configuration.admin)
+                                            isAdmin = "yes";
+                                        response.end('{ "admin" : "' + isAdmin + '" }');
+                                    });
+                                });
 							}
 							else if (url.pathname.split(".").length > 1) {
 								var filename = url.pathname.substr(7);

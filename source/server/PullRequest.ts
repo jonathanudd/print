@@ -65,6 +65,7 @@ module Print.Server {
 		tryUpdate(action: string, request: Github.PullRequest): boolean {
 			var result = false;
 			if (action == "closed") {
+                this.jobQueueHandler.abortQueue(this.taskmaster.getJobQueue());
 				console.log("Closed pull request: [" + request.title + " - " + request.html_url + "]");
 			} else {
 				if (request.created_at != request.updated_at) {

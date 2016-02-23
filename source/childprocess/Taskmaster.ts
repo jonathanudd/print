@@ -33,6 +33,7 @@ module Print.Childprocess {
 			this.jobQueue = new JobQueue(this.name + " " + this.pullRequestNumber.toString(), this.jobQueuesCreated, updateExecutionResults);
 			this.jobQueueHandler = jobQueueHandler;
 		}
+        getJobQueue() { return this.jobQueue; }
 		getNrOfJobQueuesCreated() { return this.jobQueuesCreated; }
 		readRepositoryConfiguration(repositoryName: string): RepositoryConfiguration {
 			var json = fs.readFileSync(repositoryName + ".json", "utf-8");

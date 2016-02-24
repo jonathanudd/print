@@ -8,6 +8,7 @@
 /// <reference path="User" />
 /// <reference path="Fork" />
 /// <reference path="PullRequestQueue" />
+/// <reference path="Label" />
 
 var crypt = require("crypto");
 

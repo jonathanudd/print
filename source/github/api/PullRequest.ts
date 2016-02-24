@@ -1,5 +1,6 @@
 /// <reference path="../../../typings/node/node" />
 /// <reference path="../PullRequest" />
+/// <reference path="../Label" />
 /// <reference path="../../server/PullRequestQueue" />
 /// <reference path="../../server/PullRequest" />
 /// <reference path="../../childprocess/JobQueueHandler" />
@@ -12,7 +13,7 @@ module Print.Github.Api {
 		//
 		// TODO: Use Github api instead of hardcoded urls
 		//
-		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: Server.PullRequestQueue, targetUrl: string, postToGithub: boolean, onFinishedCallback: (result: Print.Server.PullRequest[]) => void) {
+		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: Server.PullRequestQueue, targetUrl: string, postToGithub: boolean, onFinishedCallback: (result: PullRequest[]) => void) {
 			var buffer: string = ""
 			var options = {
 				hostname: "api.github.com",
@@ -28,29 +29,7 @@ module Print.Github.Api {
 					console.log("ERROR:", error.toString());
 				});
 				response.on("end", () => {
-					var result: Server.PullRequest[] = [];
-					(<Github.PullRequest[]>JSON.parse(buffer)).forEach(request => {
-						var pr = new Server.PullRequest(request, token, path, jobQueueHandler, parentQueue, targetUrl, postToGithub);
-                        var labelsBuffer: string = ""
-                        options.path = "/repos/" + organization + "/" + repository + "/issues/" + request.number + "/labels"
-                        https.request(options, (labelsResponse: any) => {
-                            labelsResponse.on("data", (chunk: string) => {
-                                labelsBuffer += chunk;
-                            });
-                            labelsResponse.on("error", (error: any) => {
-                               console.log("Error when fetching labels: ", error.toString()) ;
-                            });
-                            labelsResponse.on("end", () => {
-                                var labels: Server.Label[] = [];
-                                (<Github.Label[]>JSON.parse(labelsBuffer)).forEach(label => {
-                                    labels.push(new Server.Label(label));
-                                });                                
-                                pr.setLabels(labels);
-                            })
-                        }).end();
-						result.push(pr);
-					});
-					onFinishedCallback(result);
+					onFinishedCallback(<Github.PullRequest[]>JSON.parse(buffer));
 				});
 			}).end();
 		}

@@ -1,5 +1,6 @@
 /// <reference path="User" />
 /// <reference path="Fork" />
+/// <reference path="Label" />
 
 module Print.Github {
 	export class PullRequest {
@@ -22,5 +23,6 @@ module Print.Github {
 		additions: number;
 		deletions: number;
 		changed_files: number;
+		labels: Label[];
 	}
 }

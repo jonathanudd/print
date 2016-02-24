@@ -35,6 +35,7 @@ module Print.Server {
 		private statusTargetUrl: string;
 		private postToGithub: boolean;
 		private allJobsComplete: string;
+        private labels: Label[] = [];
 		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: PullRequestQueue, statusTargetUrl: string, postToGithub: boolean) {
 			this.jobQueueHandler = jobQueueHandler;
 			this.parentQueue = parentQueue;
@@ -62,6 +63,8 @@ module Print.Server {
 		getDiffUrl(): string { return this.diffUrl; }
 		getRepositoryName(): string { return this.repositoryName; }
 		getUser(): User { return this.user; }
+        getLabels(): Label[] { return this.labels; }
+        setLabels(labels: Label[]) { this.labels = labels; }
 		tryUpdate(action: string, request: Github.PullRequest): boolean {
 			var result = false;
 			if (action == "closed") {
@@ -121,6 +124,10 @@ module Print.Server {
 			this.executionResults.forEach(result => {
 				executionResultJSON.push(JSON.parse(result.toJSON()));
 			});
+            var labelsJSON: any[] = [];
+            this.labels.forEach(label => {
+               labelsJSON.push(JSON.parse(label.toJSON())); 
+            });
 			return JSON.stringify({
 				"id": this.id,
 				"number": this.number,
@@ -136,7 +143,8 @@ module Print.Server {
 				"user": JSON.parse(this.user.toJSON()),
 				"head": JSON.parse(this.head.toJSON()),
 				"base": JSON.parse(this.base.toJSON()),
-				"allJobsComplete": this.allJobsComplete
+				"allJobsComplete": this.allJobsComplete,
+                "labels": labelsJSON
 			});
 		}
 		private readPullRequestData(pullRequest: Github.PullRequest) {

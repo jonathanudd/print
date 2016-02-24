@@ -91,8 +91,59 @@ module Print.Server {
 							else {
 								if(this.verifyTeamMember(eventData.pull_request.user.login, this.parentOrganization)) {
 									console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
-									this.requests.push(new PullRequest(eventData.pull_request, this.token, this.path, this.jobQueueHandler, this, statusTargetUrl, this.postToGithub));
+									var pr = new PullRequest(eventData.pull_request, this.token, this.path, this.jobQueueHandler, this, statusTargetUrl, this.postToGithub);
+									var labelsBuffer: string = ""
+									var options = {
+										hostname: "api.github.com",
+										path: "/repos/" + this.organization + "/" + name + "/issues/" + pr.getNumber().toString() + "/labels",
+										method: "GET",
+										headers: { "User-Agent": "print", "Authorization": "token " + this.token }
+									}; 
+									https.request(options, (labelsResponse: any) => {
+										labelsResponse.on("data", (chunk: string) => {
+											labelsBuffer += chunk;
+										});
+										labelsResponse.on("error", (error: any) => {
+											console.log("Error when fetching labels: ", error.toString()) ;
+										});
+										labelsResponse.on("end", () => {
+											var labels: Label[] = []; 
+											(<Github.Label[]>JSON.parse(labelsBuffer)).forEach(label => {
+												labels.push(new Label(label));
+											});
+											pr.setLabels(labels);
+										});
+									}).end();
+									this.requests.push(pr);
 								}
+							}
+						}
+						else if (["labeled", "unlabeled"].indexOf(eventData.action) >= 0) {
+							var pullRequest = this.find(eventData.pull_request.id);
+							this.setNewEtag();
+							if (pullRequest) {
+								var labelsBuffer: string = ""
+								var options = {
+									hostname: "api.github.com",
+									path: "/repos/" + this.organization + "/" + name + "/issues/" + pullRequest.getNumber().toString() + "/labels",
+									method: "GET",
+									headers: { "User-Agent": "print", "Authorization": "token " + this.token }
+								}; 
+								https.request(options, (labelsResponse: any) => {
+									labelsResponse.on("data", (chunk: string) => {
+										labelsBuffer += chunk;
+									});
+									labelsResponse.on("error", (error: any) => {
+										console.log("Error when fetching labels: ", error.toString()) ;
+									});
+									labelsResponse.on("end", () => {
+										var labels: Label[] = []; 
+										(<Github.Label[]>JSON.parse(labelsBuffer)).forEach(label => {
+											labels.push(new Label(label));
+										});
+										pullRequest.setLabels(labels);
+									});
+								}).end();
 							}
 						}
 						LocalServer.sendResponse(response, 200, "OK");

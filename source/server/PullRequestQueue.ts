@@ -56,7 +56,8 @@ module Print.Server {
 									});
 								}).end();
 								this.requests.push(pr);
-							}
+							} else
+								console.log("Failed to add pull request: [" + request.title + " - " + request.html_url + "]. The user could not be verified: [" + request.user.login + "]");
 						})
 					});
 				});
@@ -115,7 +116,8 @@ module Print.Server {
 										});
 									}).end();
 									this.requests.push(pr);
-								}
+								} else
+									console.log("Failed to add pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]. The user could not be verified: [" + eventData.pull_request.user.login + "]");
 							}
 						}
 						else if (["labeled", "unlabeled"].indexOf(eventData.action) >= 0) {

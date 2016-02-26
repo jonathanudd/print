@@ -167,32 +167,78 @@ module Print.Server {
 							response.end(JSON.stringify(repos));
 						}
 						else if (urlPathList[2] == "explore") {
-							if (this.baseUrl.indexOf(request.socket.remoteAddress.substr(7)) > 0 || urlPathList[3] == "runtests") {
-								var pr: any;
-								this.pullRequestQueues.forEach(queue => {
-									if (queue.getName() == urlPathList[4]) {
-										pr = queue.find(urlPathList[5]);
-									}
+							var options = {
+								hostname: "api.github.com",
+								path: "/user",
+								headers: { "User-Agent": "print", "Authorization" : "token " + accessToken }
+							};
+							var buffer: string = "";
+							https.get(options, (authResponse: any) => {
+								authResponse.on("data", (data: string) => {
+									buffer += data;
 								});
-								var path = process.env['HOME'] + "/repositories/" + urlPathList[4] + "/" + pr.getNumber();
-								if (urlPathList[3] == "terminal")
-									child_process.spawn("gnome-terminal", [], { cwd: path }).on("error", (error: any) => {
-										console.log("Failed to spawn gnome-terminal. " + error)
-									});
-								else if(urlPathList[3] == "nautilus")
-									child_process.spawn("nautilus", ["--browser", path]).on("error", (error: any) => {
-										console.log("Failed to spawn gnome-terminal. " + error)
-									});
-								else if(urlPathList[3] == "android")
-									child_process.exec("tools/android/flash_vidhance.sh", { cwd: (path + "/ooc-vidproc") }, console.log).on("error", (error: any) => {
-										console.log("Failed to spawn flash_vidhance.sh." + error)
-									});
-								else if(urlPathList[3] == "runtests")
-									pr.processPullRequest()
-								LocalServer.sendResponse(response, 200, "OK");
-							}
-							else
-								LocalServer.sendResponse(response, 400, "Bad request");
+								authResponse.on("error", (error: any) => {
+									console.log("Error when checking if admin: " + error.toString()) 
+								});
+								authResponse.on("end", () => {
+									var user = <Github.User>JSON.parse(buffer);
+									if (user.login == this.configuration.admin || urlPathList[3] == "runtests") {
+										var pr: any;
+										this.pullRequestQueues.forEach(queue => {
+											if (queue.getName() == urlPathList[4]) {
+												pr = queue.find(urlPathList[5]);
+											}
+										});
+										var path = process.env['HOME'] + "/repositories/" + urlPathList[4] + "/" + pr.getNumber().toString();
+										if (urlPathList[3] == "terminal") {
+											child_process.spawn("gnome-terminal", [], { cwd: path }).on("error", (error: any) => {
+												console.log("Failed to spawn gnome-terminal. " + error)
+											});
+											LocalServer.sendResponse(response, 200, "OK");
+										}
+										else if(urlPathList[3] == "nautilus") {
+											child_process.spawn("nautilus", ["--browser", path]).on("error", (error: any) => {
+												console.log("Failed to spawn gnome-terminal. " + error)
+											});
+											LocalServer.sendResponse(response, 200, "OK");
+										}
+										else if(urlPathList[3] == "android") {
+											child_process.exec("tools/android/flash_vidhance.sh", { cwd: (path + "/ooc-vidproc") }, console.log).on("error", (error: any) => {
+												console.log("Failed to spawn flash_vidhance.sh." + error)
+											});
+											LocalServer.sendResponse(response, 200, "OK");
+										}
+										else if(urlPathList[3] == "runtests") {
+											pr.processPullRequest()
+											LocalServer.sendResponse(response, 200, "OK");
+										}
+										else if(urlPathList[3] == "download-binaries") {
+											var file = "binaries.tar.gz";
+											response.setHeader("Content-disposition", "attachment; filename=" + file);
+											response.setHeader("Content-type", "application/gzip");
+											var filepath = path + "/" + file;
+											fs.stat(filepath, (error: any, stats: any) => {
+												if (error) {
+													response.writeHead(500, "Error when reading file", { "Content-Type": "text/plain" });
+													response.end();
+												}
+												else {
+													if (stats.isFile()) {
+														var filestream = fs.createReadStream(filepath);
+														filestream.pipe(response);		
+													}
+													else {
+														response.writeHead(500, "Error when reading file", { "Content-Type": "text/plain" });
+														response.end();
+													}
+												}
+												
+											});
+										}
+									} else
+										LocalServer.sendResponse(response, 400, "Bad request");
+								});
+							});
 						}
 						else if (urlPathList[2]) {
 							var repo = urlPathList[2];

@@ -16,7 +16,7 @@ module Print {
 		constructor(buildFolder: string) {
 			this.registerKeyEvents();
 			this.createBuildFolder(buildFolder);
-			this.server = new Server.LocalServer("config.json", buildFolder);
+			this.server = new Server.LocalServer(buildFolder);
 			this.server.start();
 		}
 		registerKeyEvents() {

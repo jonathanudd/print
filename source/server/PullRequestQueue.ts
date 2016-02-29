@@ -15,51 +15,44 @@ module Print.Server {
 		private etag: string = "";
 		private requests: PullRequest[] = [];
 		private members: Github.User[];
-		private teamID: string;
-		private jobQueueHandler: Childprocess.JobQueueHandler;
-		private postToGithub: boolean;
-		constructor(path: string, private name: string, private organization: string, private secret: string, private token: string, private parentOrganization: string, teamName: string, jobQueueHandler: Childprocess.JobQueueHandler, statusTargetUrl: string, postToGithub: boolean) {
-			this.jobQueueHandler = jobQueueHandler;
+		constructor(path: string, private name: string, private organization: string, private secret: string, private jobQueueHandler: Childprocess.JobQueueHandler, statusTargetUrl: string) {
+			var serverConfig = ServerConfiguration.getServerConfig();
 			this.path = path + "/" + this.name;
-			this.postToGithub = postToGithub;
 			this.createQueueFolder(this.path);
 			this.setNewEtag();
-			Github.Api.PullRequest.getTeamID(parentOrganization, teamName, token, (teamID: string) => {
-				this.teamID = teamID;
-				Github.Api.PullRequest.getTeamMembers(this.teamID, token, (members: Github.User[]) => {
-					this.members = members;
-					Github.Api.PullRequest.queryOpenPullRequests(this.path, organization, name, token, this.jobQueueHandler, this, statusTargetUrl, this.postToGithub, (requests: Github.PullRequest[]) => {
-						this.setNewEtag();
-						requests.forEach(request => {
-							if (this.verifyTeamMember(request.user.login, this.parentOrganization)) {
-								var pr = new PullRequest(request, this.token, this.path, this.jobQueueHandler, this, statusTargetUrl, this.postToGithub);
-								var labelsBuffer: string = ""
-								var options = {
-									hostname: "api.github.com",
-									path: "/repos/" + organization + "/" + name + "/issues/" + request.number.toString() + "/labels",
-									method: "GET",
-									headers: { "User-Agent": "print", "Authorization": "token " + token }
-								}; 
-								https.request(options, (labelsResponse: any) => {
-									labelsResponse.on("data", (chunk: string) => {
-										labelsBuffer += chunk;
+			Github.Api.PullRequest.getTeamMembers((members: Github.User[]) => {
+				this.members = members;
+				Github.Api.PullRequest.queryOpenPullRequests(organization, name, (requests: Github.PullRequest[]) => {
+					this.setNewEtag();
+					requests.forEach(request => {
+						if (this.verifyTeamMember(request.user.login)) {
+							var pr = new PullRequest(request, serverConfig.getAuthorizationToken(), this.path, this.jobQueueHandler, this, statusTargetUrl);
+							var labelsBuffer: string = ""
+							var options = {
+								hostname: "api.github.com",
+								path: "/repos/" + organization + "/" + name + "/issues/" + request.number.toString() + "/labels",
+								method: "GET",
+								headers: { "User-Agent": "print", "Authorization": "token " + serverConfig.getAuthorizationToken() }
+							}; 
+							https.request(options, (labelsResponse: any) => {
+								labelsResponse.on("data", (chunk: string) => {
+									labelsBuffer += chunk;
+								});
+								labelsResponse.on("error", (error: any) => {
+									console.log("Error when fetching labels: ", error.toString()) ;
+								});
+								labelsResponse.on("end", () => {
+									var labels: Label[] = []; 
+									(<Github.Label[]>JSON.parse(labelsBuffer)).forEach(label => {
+										labels.push(new Label(label));
 									});
-									labelsResponse.on("error", (error: any) => {
-										console.log("Error when fetching labels: ", error.toString()) ;
-									});
-									labelsResponse.on("end", () => {
-										var labels: Label[] = []; 
-										(<Github.Label[]>JSON.parse(labelsBuffer)).forEach(label => {
-											labels.push(new Label(label));
-										});
-										pr.setLabels(labels);
-									});
-								}).end();
-								this.requests.push(pr);
-							} else
-								console.log("Failed to add pull request: [" + request.title + " - " + request.html_url + "]. The user could not be verified: [" + request.user.login + "]");
-						})
-					});
+									pr.setLabels(labels);
+								});
+							}).end();
+							this.requests.push(pr);
+						} else
+							console.log("Failed to add pull request: [" + request.title + " - " + request.html_url + "]. The user could not be verified: [" + request.user.login + "]");
+					})
 				});
 			});
 		}
@@ -67,6 +60,7 @@ module Print.Server {
 		getETag(): string { return this.etag; }
 		getOrganization(): string { return this.organization; }
 		process(name: string, request: any, response: any, statusTargetUrl: string): boolean {
+			var serverConfig = ServerConfiguration.getServerConfig();
 			var result: boolean;
 			var buffer: string = "";
 			if (result = (name == this.name)) {
@@ -90,15 +84,15 @@ module Print.Server {
 								}
 							}
 							else {
-								if(this.verifyTeamMember(eventData.pull_request.user.login, this.parentOrganization)) {
+								if(this.verifyTeamMember(eventData.pull_request.user.login)) {
 									console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
-									var pr = new PullRequest(eventData.pull_request, this.token, this.path, this.jobQueueHandler, this, statusTargetUrl, this.postToGithub);
+									var pr = new PullRequest(eventData.pull_request, serverConfig.getAuthorizationToken(), this.path, this.jobQueueHandler, this, statusTargetUrl);
 									var labelsBuffer: string = ""
 									var options = {
 										hostname: "api.github.com",
 										path: "/repos/" + this.organization + "/" + name + "/issues/" + pr.getNumber().toString() + "/labels",
 										method: "GET",
-										headers: { "User-Agent": "print", "Authorization": "token " + this.token }
+										headers: { "User-Agent": "print", "Authorization": "token " + serverConfig.getAuthorizationToken() }
 									}; 
 									https.request(options, (labelsResponse: any) => {
 										labelsResponse.on("data", (chunk: string) => {
@@ -129,7 +123,7 @@ module Print.Server {
 									hostname: "api.github.com",
 									path: "/repos/" + this.organization + "/" + name + "/issues/" + pullRequest.getNumber().toString() + "/labels",
 									method: "GET",
-									headers: { "User-Agent": "print", "Authorization": "token " + this.token }
+									headers: { "User-Agent": "print", "Authorization": "token " + serverConfig.getAuthorizationToken() }
 								}; 
 								https.request(options, (labelsResponse: any) => {
 									labelsResponse.on("data", (chunk: string) => {
@@ -174,7 +168,7 @@ module Print.Server {
 		private verifySender(serverSignature: string, payload: string, token: string): boolean {
 			return "sha1=" + crypt.createHmac("sha1", token).update(payload).digest("hex") == serverSignature;
 		}
-		private verifyTeamMember(requestUsername: string, team: string) : boolean {
+		private verifyTeamMember(requestUsername: string) : boolean {
 			var result = false;
 			this.members.forEach(user => {
 				if(user.login == requestUsername) {

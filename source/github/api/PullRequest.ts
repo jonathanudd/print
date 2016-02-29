@@ -1,25 +1,20 @@
 /// <reference path="../../../typings/node/node" />
+/// <reference path="../../configuration/ServerConfiguration" />
 /// <reference path="../PullRequest" />
-/// <reference path="../Label" />
-/// <reference path="../../server/PullRequestQueue" />
-/// <reference path="../../server/PullRequest" />
-/// <reference path="../../childprocess/JobQueueHandler" />
+/// <reference path="../Team" />
 
 var https = require("https")
 var url = require("url");
 
 module Print.Github.Api {
 	export class PullRequest {
-		//
-		// TODO: Use Github api instead of hardcoded urls
-		//
-		static queryOpenPullRequests(path: string, organization: string, repository: string, token: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: Server.PullRequestQueue, targetUrl: string, postToGithub: boolean, onFinishedCallback: (result: PullRequest[]) => void) {
+		static queryOpenPullRequests(organization: string, repository: string, onFinishedCallback: (result: Github.PullRequest[]) => void) {
 			var buffer: string = ""
 			var options = {
 				hostname: "api.github.com",
 				path: "/repos/" + organization + "/" + repository + "/pulls?state=open",
 				method: "GET",
-				headers: { "User-Agent": "print", "Authorization": "token " + token }
+				headers: { "User-Agent": "print", "Authorization": "token " + ServerConfiguration.getServerConfig().getAuthorizationToken() }
 			};
 			https.request(options, (response: any) => {
 				response.on("data", (chunk: string) => {
@@ -33,34 +28,37 @@ module Print.Github.Api {
 				});
 			}).end();
 		}
-		static getTeamMembers(teamID: string,token: string, onFinishedCallback: (result: Print.Github.User[]) => void) {
-			var buffer: string = "";
-			var options = {
-				hostname: "api.github.com",
-				path: "/teams/" + teamID + "/members",
-				method: "GET",
-				headers: { "User-Agent": "print", "Authorization": "token " + token }
-			};
-			https.request(options, (response: any) => {
-				response.on("data", (chunk: string) => {
-					buffer += chunk
-				});
-				response.on("error", (error: any) => {
-					console.log("ERROR:", error.toString());
-				});
-				response.on("end", () => {
-					var userList = <Github.User[]>JSON.parse(buffer);
-					onFinishedCallback(userList);
-				});
-			}).end();
+		static getTeamMembers(onFinishedCallback: (result: Print.Github.User[]) => void) {
+			PullRequest.getTeamID((teamID: string) => {
+				var buffer: string = "";
+				var options = {
+					hostname: "api.github.com",
+					path: "/teams/" + teamID + "/members",
+					method: "GET",
+					headers: { "User-Agent": "print", "Authorization": "token " + ServerConfiguration.getServerConfig().getAuthorizationToken() }
+				};
+				https.request(options, (response: any) => {
+					response.on("data", (chunk: string) => {
+						buffer += chunk
+					});
+					response.on("error", (error: any) => {
+						console.log("ERROR:", error.toString());
+					});
+					response.on("end", () => {
+						var userList = <Github.User[]>JSON.parse(buffer);
+						onFinishedCallback(userList);
+					});
+				}).end();
+			});
 		}
-		static getTeamID(organization: string, teamName: string,token: string, onFinishedCallback: (teamID: string) => void) {
+		static getTeamID(onFinishedCallback: (teamID: string) => void) {
+			var serverConfig = ServerConfiguration.getServerConfig();
 			var buffer: string = "";
 			var options = {
 				hostname: "api.github.com",
-				path: "/orgs/" + organization + "/teams",
+				path: "/orgs/" + serverConfig.getAuthorizationOrganization() + "/teams",
 				method: "GET",
-				headers: { "User-Agent": "print","Authorization": "token " + token},
+				headers: { "User-Agent": "print","Authorization": "token " + serverConfig.getAuthorizationToken()},
 			};
 			https.request(options, (response: any) => {
 				response.on("data", (chunk: string) => {
@@ -72,14 +70,14 @@ module Print.Github.Api {
 				response.on("end", () => {
 					var teamList = <Github.Team[]>JSON.parse(buffer);
 					teamList = teamList.filter((team) => {
-						return team.name == teamName;
+						return team.name == serverConfig.getAuthorizationTeam();
 					});
 					onFinishedCallback(teamList[0].id);
 				});
 			}).end();
 		}
-		static updateStatus(state: string, description: string, status_url: string, token: string, target_url: string, postToGithub: boolean) {
-			if (postToGithub) {
+		static updateStatus(state: string, description: string, status_url: string, target_url: string) {
+			if (ServerConfiguration.getServerConfig().getPostToGithub()) {
 				var post_data = JSON.stringify({
 					"state": state,
 					"target_url": target_url,
@@ -96,7 +94,7 @@ module Print.Github.Api {
 						"Accept": "application/json",
 						"Content-Type": "application/json",
 						"Content-Length": Buffer.byteLength(post_data),
-						"Authorization": "token " + token
+						"Authorization": "token " + ServerConfiguration.getServerConfig().getAuthorizationToken()
 					}
 				};
 				var post_request = https.request(post_options, (resp: any) => {

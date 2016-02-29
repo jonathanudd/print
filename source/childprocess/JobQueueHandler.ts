@@ -1,19 +1,18 @@
+/// <reference path="../configuration/ServerConfiguration" />
 /// <reference path="JobQueue" />
 
 module Print.Childprocess {
 	export class JobQueueHandler {
 		private jobQueues: JobQueue[];
 		private runningJobQueues: number;
-		private maxRunningJobQueues: number;
 		private currentlyRunning: JobQueue[];
-		constructor(maxRunningJobQueues: number) {
+		constructor() {
 			this.jobQueues = [];
 			this.runningJobQueues = 0;
-			this.maxRunningJobQueues = maxRunningJobQueues;
 			this.currentlyRunning = [];
 		}
 		addJobQueue(jobQueue: JobQueue) {
-			if (this.runningJobQueues < this.maxRunningJobQueues) {
+			if (this.runningJobQueues < ServerConfiguration.getServerConfig().getMaxRunningJobQueues()) {
 				this.runningJobQueues++;
 				this.currentlyRunning.push(jobQueue);
 				jobQueue.runJobs(this.onJobQueueDone.bind(this));

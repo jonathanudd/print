@@ -14,44 +14,30 @@ var child_process = require("child_process");
 module Print.Server {
 	export class LocalServer {
 		private server: any;
-		private port: number;
-		private configuration: ServerConfiguration;
 		private pullRequestQueues: PullRequestQueue[] = [];
-		private clientId: string = "";
-		private clientSecret: string = "";
 		private accessTokens: string[] = [];
 		private printApiRoot: string = "print";
 		private clientRoot: string = "print/print-client";
 		private githubScopes: string = "repo,public_repo";
 		private baseUrl: string = "";
-		private cookieSecret: string = "";
 		private jobQueueHandler: Childprocess.JobQueueHandler;
-		constructor(configurationFile: string, buildFolder: string) {
-			this.configuration = ServerConfiguration.readConfigurationFile(configurationFile);
-			this.jobQueueHandler = new Childprocess.JobQueueHandler(this.configuration.maxRunningJobQueues);
-			this.cookieSecret = this.configuration.cookieSecret;
-			this.port = this.configuration.serverPort;
-			this.clientId = this.configuration.clientId;
-			this.clientSecret = this.configuration.clientSecret;
-			this.baseUrl = this.configuration.baseUrl + ":" + this.port.toString();
-			var postToGithub = this.configuration.postToGithub == "false" ? false : true;
-			this.configuration.repos.forEach(repo => {
+		private serverConfig: ServerConfiguration;
+		constructor(buildFolder: string) {
+			this.serverConfig = ServerConfiguration.getServerConfig();
+			this.jobQueueHandler = new Childprocess.JobQueueHandler();
+			this.baseUrl = this.serverConfig.getBaseUrl() + ":" + this.serverConfig.getServerPort().toString();
+			ServerConfiguration.getServerConfig().getRepos().forEach(repo => {
 				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, repo.name, repo.organization,
-					repo.secret, this.configuration.authorizationToken, this.configuration.authorizationOrganization,
-					this.configuration.authorizationTeam, this.jobQueueHandler, this.baseUrl + "/" + this.clientRoot, postToGithub));
+					repo.secret, this.jobQueueHandler, this.baseUrl + "/" + this.clientRoot));
 			});
 			this.server = http.createServer((request: any, response: any) => {
-				try {
-					this.requestCallback(request, response)
-				}
-				catch (error) {
-					console.log("Failed in request callback on server with error: " + error);
-				}
+				try { this.requestCallback(request, response) }
+				catch (error) { console.log("Failed in request callback on server with error: " + error); }
 			});
 		}
 		start() {
-			this.server.listen(this.port, () => {
-				console.log("listening on port " + this.port);
+			this.server.listen(this.serverConfig.getServerPort(), () => {
+				console.log("listening on port " + this.serverConfig.getServerPort());
 			});
 		}
 		stop() {
@@ -85,7 +71,7 @@ module Print.Server {
 							var redirectUrl = this.baseUrl + "/" + this.clientRoot
 						else
 							var redirectUrl = this.baseUrl + url.pathname
-						response.writeHead(301, { Location: "https://github.com/login/oauth/authorize?scope=" + this.githubScopes + "&client_id=" + this.clientId + "&redirect_uri=" + redirectUrl + "?authorized=no" });
+						response.writeHead(301, { Location: "https://github.com/login/oauth/authorize?scope=" + this.githubScopes + "&client_id=" + this.serverConfig.getClientId() + "&redirect_uri=" + redirectUrl + "?authorized=no" });
 						response.end();
 					}
 					else if (urlPathList[1] + "/" + urlPathList[2] == this.clientRoot) {
@@ -107,7 +93,7 @@ module Print.Server {
                                     });
                                     authResponse.on("end", () => {
                                         var user = <Github.User>JSON.parse(buffer);
-                                        if (user.login == this.configuration.admin)
+                                        if (user.login == this.serverConfig.getAdmin())
                                             isAdmin = "yes";
                                         response.end('{ "admin" : "' + isAdmin + '" }');
                                     });
@@ -182,7 +168,7 @@ module Print.Server {
 								});
 								authResponse.on("end", () => {
 									var user = <Github.User>JSON.parse(buffer);
-									if (user.login == this.configuration.admin || urlPathList[3] == "runtests") {
+									if (user.login == this.serverConfig.getAdmin() || urlPathList[3] == "runtests") {
 										var pr: any;
 										this.pullRequestQueues.forEach(queue => {
 											if (queue.getName() == urlPathList[4]) {
@@ -322,8 +308,8 @@ module Print.Server {
 		}
 		private fetchAccessToken(response: any, url: any) {
 			var post_data = querystring.stringify({
-				"client_id": this.clientId,
-				"client_secret": this.clientSecret,
+				"client_id": this.serverConfig.getClientId(),
+				"client_secret": this.serverConfig.getClientSecret(),
 				"code": url.query.code
 			});
 			var post_options = {
@@ -348,7 +334,7 @@ module Print.Server {
 					}
 					else {
 						this.accessTokens.push(accessToken.access_token);
-						var hash = crypt.createHmac("sha1", this.cookieSecret).update(accessToken.access_token).digest("hex");
+						var hash = crypt.createHmac("sha1", this.serverConfig.getCookieSecret()).update(accessToken.access_token).digest("hex");
 						response.writeHead(301, { "Location": url.pathname + "?authorized=yes", "Set-Cookie": "authorized=" + hash + "; path=/" });
 						response.end();
 					}
@@ -375,7 +361,7 @@ module Print.Server {
 		}
 		findAccessToken(cookieValue: string) {
 			for (var i = 0; i < this.accessTokens.length; i++) {
-				if (cookieValue == crypt.createHmac("sha1", this.cookieSecret).update(this.accessTokens[i]).digest("hex")) {
+				if (cookieValue == crypt.createHmac("sha1", this.serverConfig.getCookieSecret()).update(this.accessTokens[i]).digest("hex")) {
 					return this.accessTokens[i];
 				}
 			}

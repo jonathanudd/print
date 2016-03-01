@@ -3,9 +3,9 @@
 /// <reference path="../github/events/PullRequestEvent" />
 /// <reference path="../github/api/PullRequest" />
 /// <reference path="PullRequest" />
-/// <reference path="LocalServer" />
 /// <reference path="../childprocess/JobQueueHandler" />
 /// <reference path="../github/Label" />
+/// <reference path="IncommingConnection" />
 
 var crypt = require("crypto");
 
@@ -59,7 +59,7 @@ module Print.Server {
 		getName(): string { return this.name; }
 		getETag(): string { return this.etag; }
 		getOrganization(): string { return this.organization; }
-		process(name: string, request: any, response: any, statusTargetUrl: string): boolean {
+		process(name: string, request: any, resp: IncommingConnection, statusTargetUrl: string): boolean {
 			var serverConfig = ServerConfiguration.getServerConfig();
 			var result: boolean;
 			var buffer: string = "";
@@ -142,7 +142,7 @@ module Print.Server {
 								}).end();
 							}
 						}
-						LocalServer.sendResponse(response, 200, "OK");
+						resp.write("", 200);
 					}
 					else {
 						console.log("Unauthorized sender");
@@ -150,7 +150,7 @@ module Print.Server {
 						console.log(header);
 						console.log("Payload: ");
 						console.log(buffer);
-						LocalServer.sendResponse(response, 404, "Not found");
+						resp.write("", 404);
 					}
 				}).on("error", (error: any) => {
 					console.log("Failed when processing pullrequest with error: " + error);

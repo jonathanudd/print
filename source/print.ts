@@ -1,5 +1,5 @@
 /// <reference path="../typings/node/node" />
-/// <reference path="server/LocalServer" />
+/// <reference path="server/Server" />
 
 var fs = require("fs");
 
@@ -12,11 +12,11 @@ console["log"] = function() {
 
 module Print {
 	export class Program {
-		private server: Server.LocalServer
+		private server: Server.Server
 		constructor(buildFolder: string) {
 			this.registerKeyEvents();
 			this.createBuildFolder(buildFolder);
-			this.server = new Server.LocalServer(buildFolder);
+			this.server = new Server.Server(buildFolder);
 			this.server.start();
 		}
 		registerKeyEvents() {
@@ -39,5 +39,5 @@ module Print {
 	}
 	
 }
-var path =  process.env['HOME'] + "/repositories";
-var program = new Print.Program(path);
+var homePath =  process.env['HOME'] + "/repositories";
+var program = new Print.Program(homePath);

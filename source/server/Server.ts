@@ -3,6 +3,7 @@
 /// <reference path="PullRequestQueue" />
 /// <reference path="../github/AccessToken" />
 /// <reference path="../childprocess/JobQueueHandler" />
+/// <reference path="IncommingConnection" />
 
 var http = require("http");
 var urlparser = require("url");
@@ -12,7 +13,7 @@ var crypt = require("crypto");
 var child_process = require("child_process");
 
 module Print.Server {
-	export class LocalServer {
+	export class Server {
 		private server: any;
 		private pullRequestQueues: PullRequestQueue[] = [];
 		private accessTokens: string[] = [];
@@ -27,8 +28,7 @@ module Print.Server {
 			this.jobQueueHandler = new Childprocess.JobQueueHandler();
 			this.baseUrl = this.serverConfig.getBaseUrl() + ":" + this.serverConfig.getServerPort().toString();
 			ServerConfiguration.getServerConfig().getRepos().forEach(repo => {
-				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, repo.name, repo.organization,
-					repo.secret, this.jobQueueHandler, this.baseUrl + "/" + this.clientRoot));
+				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, repo.name, repo.organization, repo.secret, this.jobQueueHandler, this.baseUrl + "/" + this.clientRoot));
 			});
 			this.server = http.createServer((request: any, response: any) => {
 				try { this.requestCallback(request, response) }
@@ -46,37 +46,35 @@ module Print.Server {
 			});
 		}
 		private requestCallback(request: any, response: any) {
-			var url = urlparser.parse(request.url.toLowerCase(), true);
+			var inCon = new IncommingConnection(response);
+			var url = urlparser.parse(request.url.toLowerCase(), true);			
 			var name = url.href.substr(7, url.href.length - 7);
 			var header = JSON.parse(JSON.stringify(request.headers));
 			switch (<string>request.method) {
 				case "POST":
-					if (!this.pullRequestQueues.some(queue => { return queue.process(name, request, response, this.baseUrl + "/" + this.clientRoot); })) {
-						LocalServer.sendResponse(response, 404, "Not found");
-					}
+					if (!this.pullRequestQueues.some(queue => { return queue.process(name, request, inCon, this.baseUrl + "/" + this.clientRoot); }))
+						inCon.write("", 404);
 					break;
 				case "GET":
 					var urlPathList: string[] = url.pathname.split("/");
-					var cookieValue: string = LocalServer.getCookieValue(request.headers.cookie, "authorized");
-					var accessToken: string = this.findAccessToken(LocalServer.getCookieValue(request.headers.cookie, "authorized"));
+					var cookieValue: string = Server.getCookieValue(request.headers.cookie, "authorized");
+					var accessToken: string = this.findAccessToken(Server.getCookieValue(request.headers.cookie, "authorized"));
 					if (url.query.error) {
 						console.log("Github ERROR: [" + url.query.error + "] Description: [" + url.query.error_description + "] Uri: [" + url.query.error_uri + "]");
-						LocalServer.sendResponse(response, 400, "Github error. See error message in server log");
+						inCon.write("Github error. See error message in serverlog.", 400);
 					}
 					else if (url.query.authorized == "no") {
-						this.fetchAccessToken(response, url);
+						this.fetchAccessToken(inCon, url);
 					}
 					else if (!accessToken) {
 						if (url.pathname == "/")
 							var redirectUrl = this.baseUrl + "/" + this.clientRoot
 						else
 							var redirectUrl = this.baseUrl + url.pathname
-						response.writeHead(301, { Location: "https://github.com/login/oauth/authorize?scope=" + this.githubScopes + "&client_id=" + this.serverConfig.getClientId() + "&redirect_uri=" + redirectUrl + "?authorized=no" });
-						response.end();
+						inCon.write("", 301, { "Location": "https://github.com/login/oauth/authorize?scope=" + this.githubScopes + "&client_id=" + this.serverConfig.getClientId() + "&redirect_uri=" + redirectUrl + "?authorized=no"});
 					}
 					else if (urlPathList[1] + "/" + urlPathList[2] == this.clientRoot) {
 							if (urlPathList[3] == "check-privileges") {
-								response.writeHead(200, "OK", { "Content-Type": "application/json" });
 								var isAdmin = "no";
                                 var options = {
                                     hostname: "api.github.com",
@@ -95,19 +93,14 @@ module Print.Server {
                                         var user = <Github.User>JSON.parse(buffer);
                                         if (user.login == this.serverConfig.getAdmin())
                                             isAdmin = "yes";
-                                        response.end('{ "admin" : "' + isAdmin + '" }');
+										inCon.write('{ "admin": "' + isAdmin + '" }', 200, { "Content-Type": "application/json" });
                                     });
                                 });
 							}
-							else if (url.pathname.split(".").length > 1) {
-								var filename = url.pathname.substr(7);
-								var contentType = LocalServer.getContentType(filename);
-								LocalServer.sendFileResponse(filename, response, contentType);
-							}
-							else {
-								var contentType = LocalServer.getContentType("print-client/index.html");
-								LocalServer.sendFileResponse("print-client/index.html", response, contentType);
-							}
+							else if (url.pathname.split(".").length > 1)
+								inCon.writeFile(url.pathname.substr(7));
+							else
+								inCon.writeFile("print-client/index.html");
 					}
 					else if (urlPathList[1] == this.printApiRoot) {
 						if (urlPathList[3] == "pr") {
@@ -124,20 +117,14 @@ module Print.Server {
 											var pr = queue.find(urlPathList[4]);
 											if (pr) {
 												var etag: string = header["etag"];
-												if (etag != pr.getEtag()) {
-													response.writeHead(200, "OK", { "etag": pr.getEtag(), "Content-Type": "application/json" });
-													response.end(pr.toJSON());
-												}
-												else {
-													response.writeHead(304, "Not Modified", { "etag": etag });
-													response.end();
-												}
+												if (etag != pr.getEtag())
+													inCon.write(pr.toJSON(), 200, { "etag": pr.getEtag(), "Content-Type": "application/json" });
+												else
+													inCon.write("", 304, { "etag": etag });
 											}
 										}
-										else {
-											response.writeHead(400, "Bad request", { "Content-Type": "application/json" });
-											response.end('{ "error": "You are not authorized to view this repository" }');
-										}
+										else
+											inCon.write('{ "error": "You are not authorized to view this repository" }', 400, { "Content-Type": "application/json" });
 									}).on("error", (error: any) => {
 										console.log("Failed when users read right on repo with error: " + error);
 									});
@@ -149,8 +136,7 @@ module Print.Server {
 							this.pullRequestQueues.forEach(queue => {
 								repos.push(queue.getName());
 							});
-							response.writeHead(200, "OK", { "Content-Type": "application/json" });
-							response.end(JSON.stringify(repos));
+							inCon.write(JSON.stringify(repos), 200, { "Content-Type": "application/json" });
 						}
 						else if (urlPathList[2] == "explore") {
 							var options = {
@@ -180,49 +166,28 @@ module Print.Server {
 											child_process.spawn("gnome-terminal", [], { cwd: path }).on("error", (error: any) => {
 												console.log("Failed to spawn gnome-terminal. " + error)
 											});
-											LocalServer.sendResponse(response, 200, "OK");
+											inCon.write("", 200);
 										}
 										else if(urlPathList[3] == "nautilus") {
 											child_process.spawn("nautilus", ["--browser", path]).on("error", (error: any) => {
 												console.log("Failed to spawn gnome-terminal. " + error)
 											});
-											LocalServer.sendResponse(response, 200, "OK");
+											inCon.write("", 200);
 										}
 										else if(urlPathList[3] == "android") {
 											child_process.exec("tools/android/flash_vidhance.sh", { cwd: (path + "/ooc-vidproc") }, console.log).on("error", (error: any) => {
 												console.log("Failed to spawn flash_vidhance.sh." + error)
 											});
-											LocalServer.sendResponse(response, 200, "OK");
+											inCon.write("", 200);
 										}
 										else if(urlPathList[3] == "runtests") {
 											pr.processPullRequest()
-											LocalServer.sendResponse(response, 200, "OK");
+											inCon.write("", 200);
 										}
-										else if(urlPathList[3] == "download-binaries") {
-											var file = "binaries.tar.gz";
-											response.setHeader("Content-disposition", "attachment; filename=" + file);
-											response.setHeader("Content-type", "application/gzip");
-											var filepath = path + "/" + file;
-											fs.stat(filepath, (error: any, stats: any) => {
-												if (error) {
-													response.writeHead(500, "Error when reading file", { "Content-Type": "text/plain" });
-													response.end();
-												}
-												else {
-													if (stats.isFile()) {
-														var filestream = fs.createReadStream(filepath);
-														filestream.pipe(response);		
-													}
-													else {
-														response.writeHead(500, "Error when reading file", { "Content-Type": "text/plain" });
-														response.end();
-													}
-												}
-												
-											});
-										}
+										else if(urlPathList[3] == "download-binaries")
+											inCon.writeFile(path + "/binaries.tar.gz", true);
 									} else
-										LocalServer.sendResponse(response, 400, "Bad request");
+										inCon.write("", 400);
 								});
 							});
 						}
@@ -238,19 +203,13 @@ module Print.Server {
 									https.get(options, (authResponse: any) => {
 										if (authResponse.statusCode == 200) {
 											var etag: string = header["etag"];
-											if (etag != queue.getETag()) {
-												response.writeHead(200, "OK", { "etag": queue.getETag(), "Content-Type": "application/json" });
-												response.end(queue.toJSON());
-											}
-											else {
-												response.writeHead(304, "Not Modified", { "etag": etag });
-												response.end();
-											}
+											if (etag != queue.getETag())
+												inCon.write(queue.toJSON(), 200, { "etag": queue.getETag(), "Content-Type": "application/json" });
+											else
+												inCon.write("", 304, { "etag": etag });
 										}
-										else {
-											response.writeHead(400, "Bad request", { "Content-Type": "application/json" });
-											response.end('{ "error": "You are not authorized to view this repository" }');
-										}
+										else
+											inCon.write('{ "error": "You are not authorized to view this repository" }', 400, { "Content-Type": "application/json" });
 									}).on("error", (error: any) => {
 										console.log("Failed when users read right on repo with error: " + error);
 									});
@@ -258,55 +217,17 @@ module Print.Server {
 							});
 						}
 						else
-							LocalServer.sendResponse(response, 400, "Bad request");
+							inCon.write("", 400);
 					}
 					else
-						LocalServer.sendResponse(response, 400, "Bad request");
+						inCon.write("", 400);
 					break;
 				default:
-					LocalServer.sendResponse(response, 400, "Bad request");
+					inCon.write("", 400);
 					break;
 			}
 		}
-		static sendResponse(responseObject: any, code: number, message: string) {
-			responseObject.writeHead(code, message, { "Content-Type": "text/plain" });
-			responseObject.end();
-		}
-		static sendFileResponse(localPath: string, responseObject: any, contentType: string) {
-			fs.readFile(localPath, (err: any, contents: string) => {
-				if (!err) {
-					responseObject.writeHead(200, "OK", { "Content-Length": contents.length, "Content-Type": contentType })
-					responseObject.end(contents);
-				}
-				else {
-					responseObject.writeHead(500, "Error when reading file", { "Content-Type": "text/plain" });
-					responseObject.end();
-				}
-			});
-		}
-		static getContentType(filename: string) {
-			var ext = filename.split(".").pop();
-			var contenttype: string;
-			switch (ext) {
-				case "html":
-					contenttype = "text/html";
-					break;
-				case "js":
-					contenttype = "application/javascript";
-					break;
-				case "css":
-					contenttype = "text/css";
-					break;
-				case "json":
-					contenttype = "application/json";
-					break;
-				default:
-					contenttype = "text/plain";
-					break;
-			};
-			return contenttype;
-		}
-		private fetchAccessToken(response: any, url: any) {
+		private fetchAccessToken(inCon: IncommingConnection, url: any) {
 			var post_data = querystring.stringify({
 				"client_id": this.serverConfig.getClientId(),
 				"client_secret": this.serverConfig.getClientSecret(),
@@ -321,22 +242,21 @@ module Print.Server {
 					"Accept": "application/json"
 				}
 			};
-			var post_request = https.request(post_options, (resp: any) => {
+			var post_request = https.request(post_options, (response: any) => {
 				var buffer: string = "";
-				resp.on("data", (data: any) => {
+				response.on("data", (data: any) => {
 					buffer += data;
 				});
-				resp.on("end", () => {
+				response.on("end", () => {
 					var accessToken = <Github.AccessToken>JSON.parse(buffer);
 					if (accessToken.error) {
 						console.log("Github ERROR: [" + accessToken.error + "] Description: [" + accessToken.error_description + "] Uri: [" + accessToken.error_uri + "]");
-						LocalServer.sendResponse(response, 400, "Github error. See error message in server log");
+						inCon.write("Github error. See error message in server log", 400);
 					}
 					else {
 						this.accessTokens.push(accessToken.access_token);
 						var hash = crypt.createHmac("sha1", this.serverConfig.getCookieSecret()).update(accessToken.access_token).digest("hex");
-						response.writeHead(301, { "Location": url.pathname + "?authorized=yes", "Set-Cookie": "authorized=" + hash + "; path=/" });
-						response.end();
+						inCon.write("", 301, { "Location": url.pathname + "?authorized=yes", "Set-Cookie": "authorized=" + hash + "; path=/" });
 					}
 				});
 			}).on("error", (error: any) => {

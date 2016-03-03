@@ -4,6 +4,7 @@
 /// <reference path="../github/AccessToken" />
 /// <reference path="../childprocess/JobQueueHandler" />
 /// <reference path="IncommingConnection" />
+/// <reference path="OutgoingConnection" />
 
 var http = require("http");
 var urlparser = require("url");
@@ -68,9 +69,9 @@ module Print.Server {
 					}
 					else if (!accessToken) {
 						if (url.pathname == "/")
-							var redirectUrl = this.baseUrl + "/" + this.clientRoot
+							var redirectUrl = this.baseUrl + "/" + this.clientRoot;
 						else
-							var redirectUrl = this.baseUrl + url.pathname
+							var redirectUrl = this.baseUrl + url.pathname;
 						inCon.write("", 301, { "Location": "https://github.com/login/oauth/authorize?scope=" + this.githubScopes + "&client_id=" + this.serverConfig.getClientId() + "&redirect_uri=" + redirectUrl + "?authorized=no"});
 					}
 					else if (urlPathList[1] + "/" + urlPathList[2] == this.clientRoot) {
@@ -228,42 +229,16 @@ module Print.Server {
 			}
 		}
 		private fetchAccessToken(inCon: IncommingConnection, url: any) {
-			var post_data = querystring.stringify({
-				"client_id": this.serverConfig.getClientId(),
-				"client_secret": this.serverConfig.getClientSecret(),
-				"code": url.query.code
-			});
-			var post_options = {
-				host: "github.com",
-				path: "/login/oauth/access_token",
-				method: "POST",
-				headers: {
-					"Content-Length": Buffer.byteLength(post_data),
-					"Accept": "application/json"
+			OutgoingConnection.requestUsersAccessToken(url.query.code, (accessToken: Github.AccessToken) => {
+				if (accessToken.error) {
+					console.log("Github ERROR: [" + accessToken.error + "] Description: [" + accessToken.error_description + "] Uri: [" + accessToken.error_uri + "]");
+					inCon.write("Github error. See error message in server log", 400);
+				} else {
+					this.accessTokens.push(accessToken.access_token);
+					var hash = crypt.createHmac("sha1", this.serverConfig.getCookieSecret()).update(accessToken.access_token).digest("hex");
+					inCon.write("", 301, { "Location": url.pathname + "?authorized=yes", "Set-Cookie": "authorized=" + hash + "; path=/" });
 				}
-			};
-			var post_request = https.request(post_options, (response: any) => {
-				var buffer: string = "";
-				response.on("data", (data: any) => {
-					buffer += data;
-				});
-				response.on("end", () => {
-					var accessToken = <Github.AccessToken>JSON.parse(buffer);
-					if (accessToken.error) {
-						console.log("Github ERROR: [" + accessToken.error + "] Description: [" + accessToken.error_description + "] Uri: [" + accessToken.error_uri + "]");
-						inCon.write("Github error. See error message in server log", 400);
-					}
-					else {
-						this.accessTokens.push(accessToken.access_token);
-						var hash = crypt.createHmac("sha1", this.serverConfig.getCookieSecret()).update(accessToken.access_token).digest("hex");
-						inCon.write("", 301, { "Location": url.pathname + "?authorized=yes", "Set-Cookie": "authorized=" + hash + "; path=/" });
-					}
-				});
-			}).on("error", (error: any) => {
-				console.log("Failed when fetching users access token with error: " + error);
 			});
-			post_request.write(post_data);
-			post_request.end();
 		}
 		static getCookieValue(cookies: string, name: string) {
 			if (cookies) {

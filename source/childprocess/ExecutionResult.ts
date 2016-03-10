@@ -7,7 +7,9 @@ module Print.Childprocess {
 		}
 		getTask(): string { return this.task; }
 		getResult(): string { return this.result; }
+		setResult(result: string): void { this.result = result; }
 		getOutput(): string { return this.output; }
+		setOutput(output: string): void { this.output = output; }
 		toJSON(): string {
 			return JSON.stringify({
 				"task": this.task,

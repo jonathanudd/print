@@ -1,5 +1,6 @@
 /// <reference path="Job" />
 /// <reference path="ExecutionResult" />
+/// <reference path="../configuration/ServerConfiguration.ts" />
 var child_process = require('child_process');
 
 module Print.Childprocess {
@@ -14,6 +15,7 @@ module Print.Childprocess {
 		private running: boolean;
 		private abort: boolean;
 		private id: string;
+		private currentExecutionResult: ExecutionResult;
 		constructor(name: string, idNumber: number,  updateExecutionResults: (executionResults: ExecutionResult[], allJobsComplete: boolean) => void) {
 			this.name = name;
 			this.id = name + " " + idNumber.toString();
@@ -39,11 +41,13 @@ module Print.Childprocess {
 			console.log("Aborting job queue for: " + this.name);
 			this.abort = true;
 			this.currentJobProcess.kill();
+			this.reportDoneToHandler(this.id);
 		}
 		isRunning() {
 			return this.running;
 		}
 		private runJob(job: Job) {
+			this.currentExecutionResult = null;
 			try {
 				var buffer: string = "";
 				this.currentJobProcess = child_process.spawn(job.getCommand(), job.getArgs(), { cwd: job.getExecutionPath() });
@@ -52,9 +56,11 @@ module Print.Childprocess {
 				});
 				this.currentJobProcess.stdout.on("data", (data: string) => {
 					buffer += data;
+					this.updateCurrentExecutionResult(job, "999", buffer);
 				});
 				this.currentJobProcess.stderr.on("data", (data: string) => {
 					buffer += data;
+					this.updateCurrentExecutionResult(job, "999", buffer);
 				});
 				this.currentJobProcess.on("close", (code: string, signal: string) => {
 					var status = code;
@@ -66,8 +72,8 @@ module Print.Childprocess {
 				});
 				var timeout = setTimeout(() => {
 					console.log(this.name + " killing: " + job.getName() + " because of timeout");
-					this.currentJobProcess.kill();
-				}, 10 * 60 * 1000);
+					this.abortRunningJobs();
+				}, ServerConfiguration.getServerConfig().getJobTimeout());
 			}
 			catch(error) {
 				if (job) {
@@ -81,14 +87,8 @@ module Print.Childprocess {
 			}
 		}
 		private jobEnd(job: Job, status: string, output: string) {
-			if (this.abort) {
-				this.reportDoneToHandler(this.id);
-			}
-			else {
-				if (!job.hide()) {
-					this.resultList.push(new ExecutionResult(job.getName(), status, output));
-					this.updateExecutionResults(this.resultList.slice(), false);
-				}
+			if (!this.abort) {
+				this.updateCurrentExecutionResult(job, status, output);
 				if (job.getFallbackJob() && status != "0") {
 					console.log(this.name + " running fallback job for " + job.getName());
 					this.runJob(job.getFallbackJob());
@@ -102,6 +102,17 @@ module Print.Childprocess {
 					this.running = false;
 					this.reportDoneToHandler(this.id);
 				}
+			}
+		}
+		private updateCurrentExecutionResult(job: Job, status: string, output: string) {
+			if (!job.hide()) {
+				if (this.currentExecutionResult == null) {
+					this.currentExecutionResult = new ExecutionResult(job.getName(), "", "");
+					this.resultList.push(this.currentExecutionResult);
+				}
+				this.currentExecutionResult.setResult(status);
+				this.currentExecutionResult.setOutput(output);
+				this.updateExecutionResults(this.resultList.slice(), false);
 			}
 		}
 	}

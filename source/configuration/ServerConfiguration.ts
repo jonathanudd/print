@@ -15,6 +15,7 @@ module Print {
 		getPostToGithub(): boolean { return this.config.postToGithub == "false" ? false : true; }
 		getAdmin(): string { return this.config.admin; }
 		getRepos(): RepositoryInformation[] { return <RepositoryInformation[]>this.config.repos; }
+		getJobTimeout(): number { return this.config.jobTimeout * 1000; }
 		
 		static getServerConfig(): ServerConfiguration {
 			if (!ServerConfiguration.serverConfiguration) {

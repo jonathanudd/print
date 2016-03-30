@@ -54,14 +54,14 @@ module Print.Childprocess {
 			var organizationUrl = githubBaseUrl + "/" + this.organization + "/" + this.name;
 			this.jobQueue.addJob(new Job("Git clone", "git", ["clone", "-b", this.branch, "--single-branch", userUrl], this.folderPath, true));
 			var fallbackJob = new Job("Git abort merge", "git", ["merge", "--abort"], primaryRepositoryFolderPath, true);
-			this.jobQueue.addJob(new Job("Git pull upstream", "git", ["pull", organizationUrl, "master"], primaryRepositoryFolderPath, false, fallbackJob));
+			this.jobQueue.addJob(new Job("Git pull upstream", "git", ["pull", organizationUrl, "develop"], primaryRepositoryFolderPath, false, fallbackJob));
 			var secondaryOrganizationUrl = githubBaseUrl + "/" + this.repositoryConfiguration.secondaryUpstream + "/" + this.repositoryConfiguration.secondary;
 			var secondaryRepositoryFolderPath = this.folderPath + "/" + this.repositoryConfiguration.secondary;
 			var secondaryUserUrl = githubBaseUrl + "/" + this.user + "/" + this.repositoryConfiguration.secondary;
-			fallbackJob = new Job("Git clone secondary upstream", "git", ["clone", "-b", "master", "--single-branch", secondaryOrganizationUrl], this.folderPath, true);
+			fallbackJob = new Job("Git clone secondary upstream", "git", ["clone", "-b", "develop", "--single-branch", secondaryOrganizationUrl], this.folderPath, true);
 			this.jobQueue.addJob(new Job("Git clone secondary from user", "git", ["clone", "-b", this.branch, "--single-branch", secondaryUserUrl], this.folderPath, true, fallbackJob));
 			fallbackJob = new Job("Git abort merge secondary", "git", ["merge", "--abort"], secondaryRepositoryFolderPath, true);
-			this.jobQueue.addJob(new Job("Git pull secondary upstream", "git", ["pull", secondaryOrganizationUrl, "master"], secondaryRepositoryFolderPath, false, fallbackJob));
+			this.jobQueue.addJob(new Job("Git pull secondary upstream", "git", ["pull", secondaryOrganizationUrl, "develop"], secondaryRepositoryFolderPath, false, fallbackJob));
 
 			this.actions.forEach(action => { this.jobQueue.addJob(Taskmaster.createJob(action, primaryRepositoryFolderPath)); });
 			this.jobQueueHandler.addJobQueue(this.jobQueue)

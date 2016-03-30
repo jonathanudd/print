@@ -188,12 +188,6 @@ module Print.Server {
 											});
 											LocalServer.sendResponse(response, 200, "OK");
 										}
-										else if(urlPathList[3] == "android") {
-											child_process.exec("tools/android/flash_vidhance.sh", { cwd: (path + "/ooc-vidproc") }, console.log).on("error", (error: any) => {
-												console.log("Failed to spawn flash_vidhance.sh." + error)
-											});
-											LocalServer.sendResponse(response, 200, "OK");
-										}
 										else if(urlPathList[3] == "runtests") {
 											pr.processPullRequest()
 											LocalServer.sendResponse(response, 200, "OK");

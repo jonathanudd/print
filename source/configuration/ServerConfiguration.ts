@@ -2,7 +2,7 @@ module Print {
 	export class ServerConfiguration {
 		private static serverConfiguration: ServerConfiguration;
 		private config: any;
-		
+
 		getClientId(): string { return this.config.clientId; }
 		getClientSecret(): string { return this.config.clientSecret; }
 		getBaseUrl(): string { return this.config.baseUrl; }
@@ -16,10 +16,11 @@ module Print {
 		getAdmin(): string { return this.config.admin; }
 		getRepos(): RepositoryInformation[] { return <RepositoryInformation[]>this.config.repos; }
 		getJobTimeout(): number { return this.config.jobTimeout * 1000; }
-		
+		getBranches(): any { return this.config.branches; }
+
 		static getServerConfig(): ServerConfiguration {
 			if (!ServerConfiguration.serverConfiguration) {
-				try { 
+				try {
 					ServerConfiguration.serverConfiguration = new ServerConfiguration();
 					ServerConfiguration.serverConfiguration.config = JSON.parse(fs.readFileSync("config.json", "utf-8"));
 				}
@@ -31,7 +32,7 @@ module Print {
 			return ServerConfiguration.serverConfiguration;
 		}
 	}
-	
+
 	export class RepositoryInformation {
 		name: string;
 		organization: string;

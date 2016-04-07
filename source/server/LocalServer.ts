@@ -20,15 +20,17 @@ module Print.Server {
 		private clientRoot: string = "print/print-client";
 		private githubScopes: string = "repo,public_repo";
 		private baseUrl: string = "";
+		private branches: any = {};
 		private jobQueueHandler: Childprocess.JobQueueHandler;
 		private serverConfig: ServerConfiguration;
 		constructor(buildFolder: string) {
 			this.serverConfig = ServerConfiguration.getServerConfig();
 			this.jobQueueHandler = new Childprocess.JobQueueHandler();
 			this.baseUrl = this.serverConfig.getBaseUrl() + ":" + this.serverConfig.getServerPort().toString();
+			this.branches = this.serverConfig.getBranches();
 			ServerConfiguration.getServerConfig().getRepos().forEach(repo => {
 				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, repo.name, repo.organization,
-					repo.secret, this.jobQueueHandler, this.baseUrl + "/" + this.clientRoot));
+					repo.secret, this.jobQueueHandler, this.baseUrl + "/" + this.clientRoot, this.branches) );
 			});
 			this.server = http.createServer((request: any, response: any) => {
 				try { this.requestCallback(request, response) }
@@ -89,7 +91,7 @@ module Print.Server {
                                         buffer += data;
                                     });
                                     authResponse.on("error", (error: any) => {
-                                       console.log("Error when checking if admin: " + error.toString()) 
+                                       console.log("Error when checking if admin: " + error.toString())
                                     });
                                     authResponse.on("end", () => {
                                         var user = <Github.User>JSON.parse(buffer);
@@ -164,7 +166,7 @@ module Print.Server {
 									buffer += data;
 								});
 								authResponse.on("error", (error: any) => {
-									console.log("Error when checking if admin: " + error.toString()) 
+									console.log("Error when checking if admin: " + error.toString())
 								});
 								authResponse.on("end", () => {
 									var user = <Github.User>JSON.parse(buffer);
@@ -205,14 +207,14 @@ module Print.Server {
 												else {
 													if (stats.isFile()) {
 														var filestream = fs.createReadStream(filepath);
-														filestream.pipe(response);		
+														filestream.pipe(response);
 													}
 													else {
 														response.writeHead(500, "Error when reading file", { "Content-Type": "text/plain" });
 														response.end();
 													}
 												}
-												
+
 											});
 										}
 									} else

@@ -36,18 +36,19 @@ module Print.Server {
 		private statusTargetUrl: string;
 		private allJobsComplete: string;
         private labels: Label[] = [];
-		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: PullRequestQueue, statusTargetUrl: string) {
+		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: PullRequestQueue, statusTargetUrl: string, private branches: any) {
 			this.jobQueueHandler = jobQueueHandler;
 			this.parentQueue = parentQueue;
 			this.readPullRequestData(request);
 			var user = request.user.login;
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
+			var upstreamBranch = request.base.ref;
 			this.repositoryName = request.head.repo.name;
 			this.statusTargetUrl = statusTargetUrl + "/" + this.repositoryName + "/pr/" + this.id;
 			this.setNewEtag();
 			parentQueue.setNewEtag();
-			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.number, user, this.repositoryName, organization, branch, jobQueueHandler, this.updateExecutionResults.bind(this));
+			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.branches, this.number, user, this.repositoryName, organization, upstreamBranch, branch, jobQueueHandler, this.updateExecutionResults.bind(this));
 
 			this.processPullRequest();
 		}
@@ -125,7 +126,7 @@ module Print.Server {
 			});
             var labelsJSON: any[] = [];
             this.labels.forEach(label => {
-               labelsJSON.push(JSON.parse(label.toJSON())); 
+               labelsJSON.push(JSON.parse(label.toJSON()));
             });
 			return JSON.stringify({
 				"id": this.id,

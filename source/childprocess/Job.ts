@@ -20,5 +20,13 @@ module Print.Childprocess {
 		getExecutionPath() { return this.executionPath }
 		hide() { return this.hideResults }
 		getFallbackJob() { return this.fallbackJob }
+		argsToString() {
+			var output = "";
+			for(var key in this.args) {
+				output = output + this.args[key] + " ";
+			}
+			return output;
+		}
+
 	}
 }

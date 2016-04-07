@@ -15,7 +15,7 @@ module Print.Server {
 		private etag: string = "";
 		private requests: PullRequest[] = [];
 		private members: Github.User[];
-		constructor(path: string, private name: string, private organization: string, private secret: string, private jobQueueHandler: Childprocess.JobQueueHandler, statusTargetUrl: string) {
+		constructor(path: string, private name: string, private organization: string, private secret: string, private jobQueueHandler: Childprocess.JobQueueHandler, statusTargetUrl: string, private branches: any) {
 			var serverConfig = ServerConfiguration.getServerConfig();
 			this.path = path + "/" + this.name;
 			this.createQueueFolder(this.path);
@@ -26,14 +26,14 @@ module Print.Server {
 					this.setNewEtag();
 					requests.forEach(request => {
 						if (this.verifyTeamMember(request.user.login)) {
-							var pr = new PullRequest(request, serverConfig.getAuthorizationToken(), this.path, this.jobQueueHandler, this, statusTargetUrl);
+							var pr = new PullRequest(request, serverConfig.getAuthorizationToken(), this.path, this.jobQueueHandler, this, statusTargetUrl, this.branches);
 							var labelsBuffer: string = ""
 							var options = {
 								hostname: "api.github.com",
 								path: "/repos/" + organization + "/" + name + "/issues/" + request.number.toString() + "/labels",
 								method: "GET",
 								headers: { "User-Agent": "print", "Authorization": "token " + serverConfig.getAuthorizationToken() }
-							}; 
+							};
 							https.request(options, (labelsResponse: any) => {
 								labelsResponse.on("data", (chunk: string) => {
 									labelsBuffer += chunk;
@@ -42,7 +42,7 @@ module Print.Server {
 									console.log("Error when fetching labels: ", error.toString()) ;
 								});
 								labelsResponse.on("end", () => {
-									var labels: Label[] = []; 
+									var labels: Label[] = [];
 									(<Github.Label[]>JSON.parse(labelsBuffer)).forEach(label => {
 										labels.push(new Label(label));
 									});
@@ -86,14 +86,14 @@ module Print.Server {
 							else {
 								if(this.verifyTeamMember(eventData.pull_request.user.login)) {
 									console.log("Added pull request: [" + eventData.pull_request.title + " - " + eventData.pull_request.html_url + "]");
-									var pr = new PullRequest(eventData.pull_request, serverConfig.getAuthorizationToken(), this.path, this.jobQueueHandler, this, statusTargetUrl);
+									var pr = new PullRequest(eventData.pull_request, serverConfig.getAuthorizationToken(), this.path, this.jobQueueHandler, this, statusTargetUrl, this.branches);
 									var labelsBuffer: string = ""
 									var options = {
 										hostname: "api.github.com",
 										path: "/repos/" + this.organization + "/" + name + "/issues/" + pr.getNumber().toString() + "/labels",
 										method: "GET",
 										headers: { "User-Agent": "print", "Authorization": "token " + serverConfig.getAuthorizationToken() }
-									}; 
+									};
 									https.request(options, (labelsResponse: any) => {
 										labelsResponse.on("data", (chunk: string) => {
 											labelsBuffer += chunk;
@@ -102,7 +102,7 @@ module Print.Server {
 											console.log("Error when fetching labels: ", error.toString()) ;
 										});
 										labelsResponse.on("end", () => {
-											var labels: Label[] = []; 
+											var labels: Label[] = [];
 											(<Github.Label[]>JSON.parse(labelsBuffer)).forEach(label => {
 												labels.push(new Label(label));
 											});
@@ -124,7 +124,7 @@ module Print.Server {
 									path: "/repos/" + this.organization + "/" + name + "/issues/" + pullRequest.getNumber().toString() + "/labels",
 									method: "GET",
 									headers: { "User-Agent": "print", "Authorization": "token " + serverConfig.getAuthorizationToken() }
-								}; 
+								};
 								https.request(options, (labelsResponse: any) => {
 									labelsResponse.on("data", (chunk: string) => {
 										labelsBuffer += chunk;
@@ -133,7 +133,7 @@ module Print.Server {
 										console.log("Error when fetching labels: ", error.toString()) ;
 									});
 									labelsResponse.on("end", () => {
-										var labels: Label[] = []; 
+										var labels: Label[] = [];
 										(<Github.Label[]>JSON.parse(labelsBuffer)).forEach(label => {
 											labels.push(new Label(label));
 										});

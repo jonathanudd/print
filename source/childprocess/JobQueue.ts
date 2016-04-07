@@ -67,7 +67,7 @@ module Print.Childprocess {
 					if (status == undefined || status === null)
 						status = signal;
 					clearTimeout(timeout);
-					console.log(this.name + " finished job: " + job.getName() + " with status: " + status);
+					console.log(this.name + " finished job: " + job.getName() + job.getCommand() + " " + job.argsToString() + " with status: " + status);
 					this.jobEnd(job, status, buffer);
 				});
 				var timeout = setTimeout(() => {

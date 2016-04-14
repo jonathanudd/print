@@ -40,7 +40,7 @@ module Print.Server {
 			this.jobQueueHandler = jobQueueHandler;
 			this.parentQueue = parentQueue;
 			this.readPullRequestData(request);
-			var user = request.user.login;
+			var user = request.head.user.login;
 			var organization = request.base.user.login;
 			var branch = request.head.ref;
 			var upstreamBranch = request.base.ref;

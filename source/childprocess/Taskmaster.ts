@@ -44,25 +44,30 @@ module Print.Childprocess {
 			this.jobQueueHandler.abortQueue(this.jobQueue);
 			this.jobQueue = new JobQueue(this.jobQueue.getName(), this.jobQueuesCreated, this.jobQueue.getUpdateExecutionResultsCallback());
 			this.jobQueuesCreated++;
-
 			Taskmaster.deleteFolderRecursive(this.folderPath);
 			fs.mkdirSync(this.folderPath);
 
-			var primaryRepositoryFolderPath = this.folderPath + "/" + this.name;
-			var githubBaseUrl = "https://" + this.token + "@github.com"
-			var userUrl = githubBaseUrl + "/" + this.user + "/" + this.name;
-			var organizationUrl = githubBaseUrl + "/" + this.organization + "/" + this.name;
-			this.jobQueue.addJob(new Job("Git clone", "git", ["clone", "-b", this.branch, "--single-branch", userUrl], this.folderPath, true));
-			var fallbackJob = new Job("Git abort merge", "git", ["merge", "--abort"], primaryRepositoryFolderPath, true);
-			this.jobQueue.addJob(new Job("Git pull upstream", "git", ["pull", organizationUrl, this.upstreamBranch], primaryRepositoryFolderPath, false, fallbackJob));
-			var secondaryOrganizationUrl = githubBaseUrl + "/" + this.repositoryConfiguration.secondaryUpstream + "/" + this.repositoryConfiguration.secondary;
-			var secondaryRepositoryFolderPath = this.folderPath + "/" + this.repositoryConfiguration.secondary;
-			var secondaryUserUrl = githubBaseUrl + "/" + this.user + "/" + this.repositoryConfiguration.secondary;
-			fallbackJob = new Job("Git clone secondary upstream", "git", ["clone", "-b", this.branches[this.upstreamBranch], "--single-branch", secondaryOrganizationUrl], this.folderPath, true);
-			this.jobQueue.addJob(new Job("Git clone secondary from user", "git", ["clone", "-b", this.branch, "--single-branch", secondaryUserUrl], this.folderPath, true, fallbackJob));
-			fallbackJob = new Job("Git abort merge secondary", "git", ["merge", "--abort"], secondaryRepositoryFolderPath, true);
-			this.jobQueue.addJob(new Job("Git pull secondary upstream", "git", ["pull", secondaryOrganizationUrl, this.branches[this.upstreamBranch]], secondaryRepositoryFolderPath, false, fallbackJob));
+                        var primaryRepositoryFolderPath = this.folderPath + "/" + this.name;
+                        var githubBaseUrl = "https://" + this.token + "@github.com"
+                        var userUrl = githubBaseUrl + "/" + this.user + "/" + this.name;
+                        var organizationUrl = githubBaseUrl + "/" + this.organization + "/" + this.name;
+                        this.jobQueue.addJob(new Job("Git clone", "git", ["clone", "-b", this.branch, "--single-branch", userUrl], this.folderPath, true));
+                        var fallbackJob = new Job("Git abort merge", "git", ["merge", "--abort"], primaryRepositoryFolderPath, true);
+                        this.jobQueue.addJob(new Job("Git pull upstream", "git", ["pull", organizationUrl, this.upstreamBranch], primaryRepositoryFolderPath, false, fallbackJob));
 
+			this.repositoryConfiguration.dependencies.forEach(repo => {
+				var secondaryOrganizationUrl = githubBaseUrl + "/" + repo.organization + "/" + repo.name;
+                        	var secondaryRepositoryFolderPath = this.folderPath + "/" + repo.name;
+                        	var secondaryUserUrl = githubBaseUrl + "/" + this.user + "/" + repo.name;
+						
+                        	var secondCloneFallbackJob = new Job("Dependency second fallback Git clone upstream", "git", ["clone", "-b", this.upstreamBranch, "--single-branch", secondaryOrganizationUrl], this.folderPath, true);
+                       		var firstCloneFallbackJob = new Job("Dependency fallback Git clone upstream", "git", ["clone", "-b", this.branches[this.upstreamBranch], "--single-branch", secondaryOrganizationUrl], this.folderPath, true, secondCloneFallbackJob);
+                        	this.jobQueue.addJob(new Job("Dependency first try Git clone from user", "git", ["clone", "-b", this.branch, "--single-branch", secondaryUserUrl], this.folderPath, true, firstCloneFallbackJob));
+
+				var secondPullFallbackJob = new Job("Dependency second fallback Git abort merge", "git", ["merge", "--abort"], secondaryRepositoryFolderPath, true);
+				var firstPullFallbackJob = new Job("Dependency fallback Git pull upstream", "git", ["pull", secondaryOrganizationUrl, this.branches[this.upstreamBranch]], secondaryRepositoryFolderPath, false, secondPullFallbackJob);
+				this.jobQueue.addJob(new Job("Dependency first try Git pull dependency upstream", "git", ["pull", secondaryOrganizationUrl, this.upstreamBranch], secondaryRepositoryFolderPath, false, firstPullFallbackJob));		
+			});
 			this.actions.forEach(action => { this.jobQueue.addJob(Taskmaster.createJob(action, primaryRepositoryFolderPath)); });
 			this.jobQueueHandler.addJobQueue(this.jobQueue)
 		}

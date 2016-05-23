@@ -60,7 +60,7 @@ module Print.Childprocess {
                         	var secondaryRepositoryFolderPath = this.folderPath + "/" + repo.name;
                         	var secondaryUserUrl = githubBaseUrl + "/" + this.user + "/" + repo.name;
 						
-                        	var secondCloneFallbackJob = new Job("Dependency second fallback Git clone upstream", "git", ["clone", "-b", this.upstreamBranch, "--single-branch", secondaryOrganizationUrl], this.folderPath, false);
+                        	var secondCloneFallbackJob = new Job("Dependency second fallback Git clone upstream", "git", ["clone", "-b", this.upstreamBranch, "--single-branch", secondaryOrganizationUrl], this.folderPath, true);
                        		var firstCloneFallbackJob = new Job("Dependency fallback Git clone upstream", "git", ["clone", "-b", this.branches[this.upstreamBranch], "--single-branch", secondaryOrganizationUrl], this.folderPath, true, secondCloneFallbackJob);
                         	this.jobQueue.addJob(new Job("Dependency first try Git clone from user", "git", ["clone", "-b", this.branch, "--single-branch", secondaryUserUrl], this.folderPath, true, firstCloneFallbackJob));
 

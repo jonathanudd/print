@@ -20,41 +20,45 @@ module Print.Server {
 			this.path = path + "/" + this.name;
 			this.createQueueFolder(this.path);
 			this.setNewEtag();
-			Github.Api.PullRequest.getTeamMembers((members: Github.User[]) => {
-				this.members = members;
-				Github.Api.PullRequest.queryOpenPullRequests(organization, name, (requests: Github.PullRequest[]) => {
-					this.setNewEtag();
-					requests.forEach(request => {
-						if (this.verifyTeamMember(request.user.login)) {
-							var pr = new PullRequest(request, serverConfig.getAuthorizationToken(), this.path, this.jobQueueHandler, this, statusTargetUrl, this.branches);
-							var labelsBuffer: string = ""
-							var options = {
-								hostname: "api.github.com",
-								path: "/repos/" + organization + "/" + name + "/issues/" + request.number.toString() + "/labels",
-								method: "GET",
-								headers: { "User-Agent": "print", "Authorization": "token " + serverConfig.getAuthorizationToken() }
-							};
-							https.request(options, (labelsResponse: any) => {
-								labelsResponse.on("data", (chunk: string) => {
-									labelsBuffer += chunk;
-								});
-								labelsResponse.on("error", (error: any) => {
-									console.log("Error when fetching labels: ", error.toString()) ;
-								});
-								labelsResponse.on("end", () => {
-									var labels: Label[] = [];
-									(<Github.Label[]>JSON.parse(labelsBuffer)).forEach(label => {
-										labels.push(new Label(label));
-									});
-									pr.setLabels(labels);
-								});
-							}).end();
-							this.requests.push(pr);
-						} else
-							console.log("Failed to add pull request: [" + request.title + " - " + request.html_url + "]. The user could not be verified: [" + request.user.login + "]");
-					})
-				});
+			var syncRequest = require('sync-request');
+			var options = {
+				headers: { "User-Agent": "print", "Authorization": "token " + ServerConfiguration.getServerConfig().getAuthorizationToken() }
+			};
+			var IDbuffer = syncRequest ("GET","https://api.github.com" + "/orgs/" + serverConfig.getAuthorizationOrganization() + "/teams",options);
+			var teamList = <Github.Team[]>JSON.parse(IDbuffer.body.toString('utf-8'));
+			teamList = teamList.filter((team) => {
+				return team.name == serverConfig.getAuthorizationTeam();
 			});
+			var teamID = teamList[0].id;
+			var teamMemberBuffer = syncRequest ("GET","https://api.github.com"+ "/teams/" + teamID + "/members",options);
+			var members = <Github.User[]>JSON.parse(teamMemberBuffer.body);
+			this.members = members;
+			this.setNewEtag();
+			var resbuffer = syncRequest ("GET","https://api.github.com"+ "/repos/" + organization + "/" + name + "/pulls?state=open",options);
+			var pullrequests = <Github.PullRequest[]>JSON.parse(resbuffer.body);
+			pullrequests.forEach(request => {
+				if (this.verifyTeamMember(request.user.login)) {
+					var pr = new PullRequest(request, serverConfig.getAuthorizationToken(), this.path, this.jobQueueHandler, this, statusTargetUrl, this.branches);
+					var res = syncRequest ("GET","https://api.github.com"+ "/repos/" + organization + "/" + name + "/issues/" + request.number.toString() + "/labels" ,options);
+					var labels:Label[] = [];
+					(<Github.Label[]>JSON.parse(res.body)).forEach(label => {
+						labels.push(new Label(label));
+					});
+					pr.setLabels(labels);
+					var filteredLabels = pr.getLabels().filter(e => e.name == "peer review" || e.name == "final review");
+					if (filteredLabels.length != 0) {
+						this.requests.unshift(pr);
+					}
+					else {
+						this.requests.push(pr);
+					}
+				} else
+					console.log("Failed to add pull request: [" + request.title + " - " + request.html_url + "]. The user could not be verified: [" + request.user.login + "]");
+			})
+			/*console.log("spawning");
+			this.requests.forEach(request => {
+				request.processPullRequest()
+			});*/
 		}
 		getName(): string { return this.name; }
 		getETag(): string { return this.etag; }
@@ -107,6 +111,7 @@ module Print.Server {
 												labels.push(new Label(label));
 											});
 											pr.setLabels(labels);
+											pr.processPullRequest();
 										});
 									}).end();
 									this.requests.push(pr);

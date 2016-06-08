@@ -50,7 +50,7 @@ module Print.Server {
 			parentQueue.setNewEtag();
 			this.taskmaster = new Print.Childprocess.Taskmaster(path, token, this.branches, this.number, user, this.repositoryName, organization, upstreamBranch, branch, jobQueueHandler, this.updateExecutionResults.bind(this));
 
-			this.processPullRequest();
+			//this.processPullRequest();
 		}
 		getEtag(): string { return this.etag }
 		getId(): string { return this.id; }

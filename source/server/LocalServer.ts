@@ -32,6 +32,12 @@ module Print.Server {
 				this.pullRequestQueues.push(new PullRequestQueue(buildFolder, repo.name, repo.organization,
 					repo.secret, this.jobQueueHandler, this.baseUrl + "/" + this.clientRoot, this.branches) );
 			});
+			console.log("Finished fetching pullrequest information");
+			this.pullRequestQueues.forEach(queue => {
+				queue.requests.forEach(req => {
+					req.processPullRequest();
+				});
+			});
 			this.server = http.createServer((request: any, response: any) => {
 				try { this.requestCallback(request, response) }
 				catch (error) { console.log("Failed in request callback on server with error: " + error); }

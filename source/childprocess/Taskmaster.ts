@@ -22,6 +22,7 @@ module Print.Childprocess {
 		private jobQueue: JobQueue;
 		private jobQueueHandler: JobQueueHandler;
 		private jobQueuesCreated: number;
+		private noTest: bool = false;
 		constructor(path: string, private token: string, private branches: any, pullRequestNumber: number, user: string, private name: string, private organization: string, private upstreamBranch: string, branch: string, jobQueueHandler: JobQueueHandler, updateExecutionResults: (executionResults: ExecutionResult[]) => void) {
 			this.pullRequestNumber = pullRequestNumber;
 			this.folderPath = path + "/" + pullRequestNumber;
@@ -35,6 +36,8 @@ module Print.Childprocess {
 		}
         getJobQueue() { return this.jobQueue; }
 		getNrOfJobQueuesCreated() { return this.jobQueuesCreated; }
+                getNoTest(): bool {return this.noTest };
+                setNoTest(noTest: bool) {this.noTest = noTest; }
 		readRepositoryConfiguration(repositoryName: string): RepositoryConfiguration {
 			var json = fs.readFileSync(repositoryName + ".json", "utf-8");
 			var repositoryConfiguration: RepositoryConfiguration = JSON.parse(json);
@@ -68,8 +71,12 @@ module Print.Childprocess {
 				var firstPullFallbackJob = new Job("Dependency fallback Git pull upstream", "git", ["pull", secondaryOrganizationUrl, this.branches[this.upstreamBranch]], secondaryRepositoryFolderPath, false, secondPullFallbackJob);
 				this.jobQueue.addJob(new Job("Dependency first try Git pull dependency upstream", "git", ["pull", secondaryOrganizationUrl, this.upstreamBranch], secondaryRepositoryFolderPath, true, firstPullFallbackJob));		
 			});
-			this.actions.forEach(action => { this.jobQueue.addJob(Taskmaster.createJob(action, primaryRepositoryFolderPath)); });
-			this.jobQueueHandler.addJobQueue(this.jobQueue)
+                        if (this.noTest == false) {
+                                this.actions.forEach(action => { this.jobQueue.addJob(Taskmaster.createJob(action, primaryRepositoryFolderPath)); });
+                                //this.jobQueueHandler.addJobQueue(this.jobQueue)
+                        }
+                        this.jobQueueHandler.addJobQueue(this.jobQueue)
+
 		}
         private static createJob(action: Action, repositoryPath: string) {
             var args: string[] = [];

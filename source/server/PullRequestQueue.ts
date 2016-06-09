@@ -39,7 +39,17 @@ module Print.Server {
 			pullrequests.forEach(request => {
 				if (this.verifyTeamMember(request.user.login)) {
 					var pr = new PullRequest(request, serverConfig.getAuthorizationToken(), this.path, this.jobQueueHandler, this, statusTargetUrl, this.branches);
-					var res = syncRequest ("GET","https://api.github.com"+ "/repos/" + organization + "/" + name + "/issues/" + request.number.toString() + "/labels" ,options);
+					
+					var  fileBuffer = syncRequest("GET", "https://api.github.com" + "/repos/" + organization + "/" + name + "/pulls/" + request.number.toString() + "/files", options);
+					var files: string[] = [];
+
+					(<any[]>JSON.parse(fileBuffer.body)).forEach(file => {
+						files.push(file.filename);
+					});
+					pr.setFiles(files);
+					pr.setShallowPullRequest();
+
+					var res = syncRequest("GET","https://api.github.com"+ "/repos/" + organization + "/" + name + "/issues/" + request.number.toString() + "/labels" ,options);
 					var labels:Label[] = [];
 					(<Github.Label[]>JSON.parse(res.body)).forEach(label => {
 						labels.push(new Label(label));
@@ -111,6 +121,31 @@ module Print.Server {
 												labels.push(new Label(label));
 											});
 											pr.setLabels(labels);
+										});
+									}).end();
+									var fileBuffer: string = ""
+									var optionsFiles = {
+										hostname: "api.github.com",
+										path: "/repos/" + this.organization + "/" + name + "/pulls/" + pr.getNumber().toString() + "/files",
+										method: "GET",
+										headers: { "User-Agent": "print", "Authorization": "token " + serverConfig.getAuthorizationToken() }
+									};
+
+									https.request(optionsFiles, (filesResponse: any) => {
+										filesResponse.on("data", (chunk: string) => {
+											fileBuffer += chunk;
+										});
+										filesResponse.on("error", (error: any) => {
+											console.log("Error when fetching files: ", error.toString()) ;
+										});
+										filesResponse.on("end", () => {
+											var files: string[] = [];
+											var fileList = <any[]>JSON.parse(fileBuffer);
+											fileList.forEach(file => {
+												files.push(file.filename);
+											});
+											pr.setFiles(files);
+											pr.setShallowPullRequest();
 											pr.processPullRequest();
 										});
 									}).end();

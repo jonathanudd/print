@@ -35,7 +35,8 @@ module Print.Server {
 		private jobQueueHandler: Childprocess.JobQueueHandler;
 		private statusTargetUrl: string;
 		private allJobsComplete: string;
-        private labels: Label[] = [];
+        	private labels: Label[] = [];
+		private files: string[] = [];
 		constructor(request: Github.PullRequest, private token: string, path: string, jobQueueHandler: Childprocess.JobQueueHandler, parentQueue: PullRequestQueue, statusTargetUrl: string, private branches: any) {
 			this.jobQueueHandler = jobQueueHandler;
 			this.parentQueue = parentQueue;
@@ -63,8 +64,10 @@ module Print.Server {
 		getDiffUrl(): string { return this.diffUrl; }
 		getRepositoryName(): string { return this.repositoryName; }
 		getUser(): User { return this.user; }
-        getLabels(): Label[] { return this.labels; }
-        setLabels(labels: Label[]) { this.labels = labels; }
+        	getLabels(): Label[] { return this.labels; }
+        	setLabels(labels: Label[]) { this.labels = labels; }
+        	getFiles(): string[] { return this.files; }
+        	setFiles(files: string[]) { this.files = files; }
 		tryUpdate(action: string, request: Github.PullRequest): boolean {
 			var result = false;
 			if (action == "closed") {
@@ -80,6 +83,27 @@ module Print.Server {
 				result = true;
 			}
 			return result;
+		}
+		setShallowPullRequest() {
+			var hasExecutableFiles = false;
+			this.files.forEach(file => {
+				var fileExtension = "";
+				var tmp = file.split(".");
+				if ( tmp.length === 1 || ( tmp[0] === "" && tmp.length === 2 ) ) {
+				    fileExtension =  "";
+				}
+				else {
+					fileExtension =  tmp.pop(); 
+				}
+				if (fileExtension != "md" && fileExtension != "txt" && fileExtension != "ods") {
+					hasExecutableFiles = true
+				}
+				
+			});
+			if (hasExecutableFiles == false) {
+				console.log("Taskmaster NoTest")
+				this.taskmaster.setNoTest(true);
+			}
 		}
 		processPullRequest() {
 			this.executionResults = [];

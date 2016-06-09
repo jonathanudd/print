@@ -95,7 +95,7 @@ module Print.Server {
 				else {
 					fileExtension =  tmp.pop(); 
 				}
-				if (fileExtension != "md") {
+				if (fileExtension != "md" && fileExtension != "txt" && fileExtension != "ods") {
 					hasExecutableFiles = true
 				}
 				

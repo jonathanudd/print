@@ -55,7 +55,12 @@ module Print.Childprocess {
 					console.log(this.name + " failed when spawning: " + job.getName() + " with error: " + error);
 				});
 				this.currentJobProcess.stdout.on("data", (data: string) => {
-					buffer += data;
+					if (Buffer.byteLength(buffer, 'utf8') < 200000000) {
+						buffer += data;
+					}
+					else {
+						buffer = "Output limit exceeded"
+					}
 					this.updateCurrentExecutionResult(job, "999", buffer);
 				});
 				this.currentJobProcess.stderr.on("data", (data: string) => {

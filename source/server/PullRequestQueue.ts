@@ -206,7 +206,7 @@ module Print.Server {
 			return JSON.stringify(jsonObject);
 		}
 		private verifySender(serverSignature: string, payload: string, token: string): boolean {
-			return "sha1=" + crypt.createHmac("sha1", token).update(payload).digest("hex") == serverSignature;
+			return "sha1=" + crypt.createHmac("sha1", token).update(new Buffer(payload, 'utf-8')).digest("hex") == serverSignature;
 		}
 		private verifyTeamMember(requestUsername: string) : boolean {
 			var result = false;

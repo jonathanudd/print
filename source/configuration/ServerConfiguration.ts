@@ -18,7 +18,7 @@ module Print {
 		getJobTimeout(): number { return this.config.jobTimeout * 1000; }
 		getBranches(): any { return this.config.branches; }
 		getName(): string {
-			if (this.config. = "") {
+			if (this.config.name == "") {
 				return "PRInt";
 			}
 			else {

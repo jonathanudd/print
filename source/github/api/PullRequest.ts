@@ -78,11 +78,12 @@ module Print.Github.Api {
 		}
 		static updateStatus(state: string, description: string, status_url: string, target_url: string) {
 			if (ServerConfiguration.getServerConfig().getPostToGithub()) {
+				var printInstance = ServerConfiguration.getServerConfig().getName();
 				var post_data = JSON.stringify({
 					"state": state,
 					"target_url": target_url,
 					"description": description,
-					"context": "PRInt"
+					"context": printInstance
 				});
 				var parsedPath = url.parse(status_url).pathname;
 				var post_options = {

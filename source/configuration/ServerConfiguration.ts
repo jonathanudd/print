@@ -17,6 +17,14 @@ module Print {
 		getRepos(): RepositoryInformation[] { return <RepositoryInformation[]>this.config.repos; }
 		getJobTimeout(): number { return this.config.jobTimeout * 1000; }
 		getBranches(): any { return this.config.branches; }
+		getName(): string {
+			if (this.config. = "") {
+				return "PRInt";
+			}
+			else {
+				return this.config.name;
+			}
+		}
 
 		static getServerConfig(): ServerConfiguration {
 			if (!ServerConfiguration.serverConfiguration) {

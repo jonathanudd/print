@@ -55,12 +55,19 @@ module Print.Server {
 						labels.push(new Label(label));
 					});
 					pr.setLabels(labels);
-					var filteredLabels = pr.getLabels().filter(e => e.name == "peer review" || e.name == "final review");
+					//var filteredLabels = pr.getLabels().filter(e => e.name == "peer review" || e.name == "final review");
+					var filteredLabels = pr.getLabels().filter(e => (e.name == "frozen"));
 					if (filteredLabels.length != 0) {
-						this.requests.unshift(pr);
+						this.requests.push(pr);
 					}
 					else {
-						this.requests.push(pr);
+						filteredLabels = pr.getLabels().filter(e => e.name == "peer review" || e.name == "final review");
+						if (filteredLabels.length != 0) {
+							this.requests.unshift(pr);
+					}
+						else {
+							this.requests.push(pr);
+						}
 					}
 				} else
 					console.log("Failed to add pull request: [" + request.title + " - " + request.html_url + "]. The user could not be verified: [" + request.user.login + "]");

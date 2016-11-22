@@ -74,6 +74,9 @@ module Print.Childprocess {
 				var firstPullFallbackJob = new Job("Dependency fallback Git pull upstream", "git", ["pull", secondaryOrganizationUrl, this.branches[this.upstreamBranch]], secondaryRepositoryFolderPath, true, secondPullFallbackJob);
 				this.jobQueue.addJob(new Job("Dependency first try Git pull dependency upstream", "git", ["pull", secondaryOrganizationUrl, this.upstreamBranch], secondaryRepositoryFolderPath, true, firstPullFallbackJob));
 			});
+
+			var createBinaryFolderJob = new Job("Create folders for archive", "mkdir", ['-p', 'binaries'],this.folderPath, true);
+			this.jobQueue.addJob(createBinaryFolderJob);
                         if (this.noTest == false) {
                                 this.actions.forEach(action => { this.jobQueue.addJob(Taskmaster.createJob(action, primaryRepositoryFolderPath)); });
                                 //this.jobQueueHandler.addJobQueue(this.jobQueue)

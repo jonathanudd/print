@@ -3,4 +3,5 @@ git submodule init
 git submodule update
 tsc -p print-client --outFile print-client/build/client.js
 tsc
+ulimit -c unlimited
 node build/print.js

@@ -101,7 +101,7 @@ module Print.Server {
                                     });
                                     authResponse.on("end", () => {
                                         var user = <Github.User>JSON.parse(buffer);
-                                        if (user.login == this.serverConfig.getAdmin())
+                                        //if (user.login == this.serverConfig.getAdmin())
                                             isAdmin = "yes";
                                         response.end('{ "admin" : "' + isAdmin + '" }');
                                     });

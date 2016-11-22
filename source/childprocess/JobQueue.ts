@@ -106,6 +106,9 @@ module Print.Childprocess {
 					this.updateExecutionResults(this.resultList.slice(), true);
 					this.running = false;
 					this.reportDoneToHandler(this.id);
+					if (status == "SIGABRT" || status == "SIGSEGV") {
+						fs.createReadStream(job.getExecutionPath() + '/core').pipe(fs.createWriteStream(job.getExecutionPath() + "/../binaries/" + job.getName() + '-core-' + this.id));
+					}
 				}
 			}
 		}

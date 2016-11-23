@@ -176,7 +176,7 @@ module Print.Server {
 								});
 								authResponse.on("end", () => {
 									var user = <Github.User>JSON.parse(buffer);
-									if (user.login == this.serverConfig.getAdmin() || urlPathList[3] == "runtests") {
+									//if (user.login == this.serverConfig.getAdmin() || urlPathList[3] == "runtests") {
 										var pr: any;
 										this.pullRequestQueues.forEach(queue => {
 											if (queue.getName() == urlPathList[4]) {
@@ -223,8 +223,8 @@ module Print.Server {
 
 											});
 										}
-									} else
-										LocalServer.sendResponse(response, 400, "Bad request");
+									//} else
+										//LocalServer.sendResponse(response, 400, "Bad request");
 								});
 							});
 						}

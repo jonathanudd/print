@@ -3,11 +3,13 @@
 
 var fs = require("fs");
 
+require('scribe-js')();
+var console = process.console;
+console.addLogger('debug', 'red');
+console.addLogger('fun', 'red');
 var originalConsole = console["log"];
 console["log"] = function() {
-    if (arguments[0])
-        process.stdout.write("[" + (new Date).toLocaleTimeString() + "] ");
-    return originalConsole.apply(console, arguments)
+   return originalConsole.apply(console, arguments)
 }
 
 module Print {
